@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,7 @@ import 'package:test/test.dart' hide TypeMatcher, isInstanceOf;
 
 void main() {
   group('scrolling performance test', () {
-    FlutterDriver driver;
+    late FlutterDriver driver;
 
     setUpAll(() async {
       driver = await FlutterDriver.connect();
@@ -50,18 +50,17 @@ void main() {
       });
 
       final TimelineSummary summary = TimelineSummary.summarize(timeline);
-      summary.writeSummaryToFile(summaryName, pretty: true);
-      summary.writeTimelineToFile(summaryName, pretty: true);
+      await summary.writeTimelineToFile(summaryName, pretty: true);
     }
 
     test('complex_layout_scroll_perf', () async {
       await testScrollPerf('complex-scroll', 'complex_layout_scroll_perf');
-    });
+    }, timeout: Timeout.none);
 
     test('tiles_scroll_perf', () async {
       await driver.tap(find.byTooltip('Open navigation menu'));
       await driver.tap(find.byValueKey('scroll-switcher'));
       await testScrollPerf('tiles-scroll', 'tiles_scroll_perf');
-    });
+    }, timeout: Timeout.none);
   });
 }

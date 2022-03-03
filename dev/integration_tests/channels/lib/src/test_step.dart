@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -44,13 +44,10 @@ class TestStepResult {
         return const TestStepResult('Executing', nothing, TestStatus.pending);
       case ConnectionState.done:
         if (snapshot.hasData) {
-          return snapshot.data;
-        } else {
-          final TestStepResult result = snapshot.error;
-          return result;
+          return snapshot.data!;
         }
-        break;
-      default:
+        return snapshot.error! as TestStepResult;
+      case ConnectionState.active:
         throw 'Unsupported state ${snapshot.connectionState}';
     }
   }
@@ -174,7 +171,7 @@ bool _deepEqualsList(List<dynamic> a, List<dynamic> b) {
 bool _deepEqualsMap(Map<dynamic, dynamic> a, Map<dynamic, dynamic> b) {
   if (a.length != b.length)
     return false;
-  for (dynamic key in a.keys) {
+  for (final dynamic key in a.keys) {
     if (!b.containsKey(key) || !_deepEquals(a[key], b[key]))
       return false;
   }

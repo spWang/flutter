@@ -1,13 +1,15 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'package:flutter/rendering.dart';
-import '../flutter_test_alternative.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'rendering_tester.dart';
 
 void main() {
+  TestRenderingFlutterBinding.ensureInitialized();
+
   test('RenderPositionedBox expands', () {
     final RenderConstrainedBox sizer = RenderConstrainedBox(
       additionalConstraints: BoxConstraints.tight(const Size(100.0, 100.0)),
@@ -69,5 +71,5 @@ void main() {
 
     expect(positioner.size.width, equals(200.0));
     expect(positioner.size.height, equals(200.0));
-  }, skip: isBrowser);
+  });
 }

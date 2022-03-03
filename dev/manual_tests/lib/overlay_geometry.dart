@@ -1,13 +1,8 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 class CardModel {
   CardModel(this.value, this.height, this.color);
@@ -25,8 +20,8 @@ enum MarkerType { topLeft, bottomRight, touch }
 
 class _MarkerPainter extends CustomPainter {
   const _MarkerPainter({
-    this.size,
-    this.type,
+    required this.size,
+    required this.type,
   });
 
   final double size;
@@ -61,21 +56,21 @@ class _MarkerPainter extends CustomPainter {
 
 class Marker extends StatelessWidget {
   const Marker({
-    Key key,
+    Key? key,
     this.type = MarkerType.touch,
     this.position,
     this.size = 40.0,
   }) : super(key: key);
 
-  final Offset position;
+  final Offset? position;
   final double size;
   final MarkerType type;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: position.dx - size / 2.0,
-      top: position.dy - size / 2.0,
+      left: position!.dx - size / 2.0,
+      top: position!.dy - size / 2.0,
       width: size,
       height: size,
       child: IgnorePointer(
@@ -91,6 +86,8 @@ class Marker extends StatelessWidget {
 }
 
 class OverlayGeometryApp extends StatefulWidget {
+  const OverlayGeometryApp({Key? key}) : super(key: key);
+
   @override
   OverlayGeometryAppState createState() => OverlayGeometryAppState();
 }
@@ -98,22 +95,22 @@ class OverlayGeometryApp extends StatefulWidget {
 typedef CardTapCallback = void Function(GlobalKey targetKey, Offset globalPosition);
 
 class CardBuilder extends SliverChildDelegate {
-  CardBuilder({ this.cardModels, this.onTapUp });
+  CardBuilder({List<CardModel>? cardModels, this.onTapUp }) : cardModels = cardModels ?? <CardModel>[];
 
   final List<CardModel> cardModels;
-  final CardTapCallback onTapUp;
+  final CardTapCallback? onTapUp;
 
   static const TextStyle cardLabelStyle =
     TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold);
 
   @override
-  Widget build(BuildContext context, int index) {
+  Widget? build(BuildContext context, int index) {
     if (index >= cardModels.length)
       return null;
     final CardModel cardModel = cardModels[index];
     return GestureDetector(
       key: cardModel.key,
-      onTapUp: (TapUpDetails details) { onTapUp(cardModel.targetKey, details.globalPosition); },
+      onTapUp: (TapUpDetails details) { onTapUp!(cardModel.targetKey, details.globalPosition); },
       child: Card(
         key: cardModel.targetKey,
         color: cardModel.color,
@@ -136,7 +133,7 @@ class CardBuilder extends SliverChildDelegate {
 }
 
 class OverlayGeometryAppState extends State<OverlayGeometryApp> {
-  List<CardModel> cardModels;
+  List<CardModel> cardModels = <CardModel>[];
   Map<MarkerType, Offset> markers = <MarkerType, Offset>{};
   double markersScrollOffset = 0.0;
 
@@ -149,8 +146,8 @@ class OverlayGeometryAppState extends State<OverlayGeometryApp> {
       48.0, 63.0, 82.0, 146.0, 60.0, 55.0, 84.0, 96.0, 50.0,
     ];
     cardModels = List<CardModel>.generate(cardHeights.length, (int i) {
-      final Color color = Color.lerp(Colors.red.shade300, Colors.blue.shade900, i / cardHeights.length);
-      return CardModel(i, cardHeights[i], color);
+      final Color? color = Color.lerp(Colors.red.shade300, Colors.blue.shade900, i / cardHeights.length);
+      return CardModel(i, cardHeights[i], color!);
     });
   }
 
@@ -159,10 +156,9 @@ class OverlayGeometryAppState extends State<OverlayGeometryApp> {
       setState(() {
         final double dy = markersScrollOffset - notification.metrics.extentBefore;
         markersScrollOffset = notification.metrics.extentBefore;
-        for (MarkerType type in markers.keys) {
-          final Offset oldPosition = markers[type];
+        markers.forEach((MarkerType type, Offset oldPosition) {
           markers[type] = oldPosition.translate(0.0, dy);
-        }
+        });
       });
     }
     return false;
@@ -171,12 +167,12 @@ class OverlayGeometryAppState extends State<OverlayGeometryApp> {
   void handleTapUp(GlobalKey target, Offset globalPosition) {
     setState(() {
       markers[MarkerType.touch] = globalPosition;
-      final RenderBox box = target.currentContext.findRenderObject();
-      markers[MarkerType.topLeft] = box.localToGlobal(const Offset(0.0, 0.0));
+      final RenderBox? box = target.currentContext?.findRenderObject() as RenderBox?;
+      markers[MarkerType.topLeft] = box!.localToGlobal(Offset.zero);
       final Size size = box.size;
       markers[MarkerType.bottomRight] = box.localToGlobal(Offset(size.width, size.height));
-      final ScrollableState scrollable = Scrollable.of(target.currentContext);
-      markersScrollOffset = scrollable.position.pixels;
+      final ScrollableState? scrollable = Scrollable.of(target.currentContext!);
+      markersScrollOffset = scrollable!.position.pixels;
     });
   }
 
@@ -199,7 +195,7 @@ class OverlayGeometryAppState extends State<OverlayGeometryApp> {
             ),
           ),
         ),
-        for (MarkerType type in markers.keys)
+        for (final MarkerType type in markers.keys)
           Marker(type: type, position: markers[type]),
       ],
     );
@@ -207,19 +203,10 @@ class OverlayGeometryAppState extends State<OverlayGeometryApp> {
 }
 
 void main() {
-  if (Platform.isMacOS) {
-    // TODO(gspencergoog): Update this when TargetPlatform includes macOS. https://github.com/flutter/flutter/issues/31366
-    // See https://github.com/flutter/flutter/wiki/Desktop-shells#target-platform-override
-    debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
-  }
-
-  runApp(MaterialApp(
-    theme: ThemeData(
-      brightness: Brightness.light,
-      primarySwatch: Colors.blue,
-      accentColor: Colors.redAccent,
+  runApp(
+    const MaterialApp(
+      title: 'Cards',
+      home: OverlayGeometryApp(),
     ),
-    title: 'Cards',
-    home: OverlayGeometryApp(),
-  ));
+  );
 }

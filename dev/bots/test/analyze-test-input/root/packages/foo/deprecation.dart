@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,7 @@
 void test1() { }
 
 @Deprecated(
-  'Missing space ->.'
+  'Missing space ->.' //ignore: missing_whitespace_between_adjacent_strings
   'This feature was deprecated after v1.2.3.'
 )
 void test2() { }
@@ -26,7 +26,7 @@ void test3() { }
 )
 void test4() { }
 
-@deprecated // no message
+@deprecated // ignore: provide_deprecation_message
 void test5() { }
 
 @Deprecated('Not the right syntax. This feature was deprecated after v1.2.3.')
@@ -52,3 +52,51 @@ void test8() { }
  'This feature was deprecated after v1.2.3.'
 )
 void test10() { }
+
+@Deprecated(
+  'URLs are not required. '
+  'This feature was deprecated after v1.0.0.'
+)
+void test11() { }
+
+@Deprecated(
+  'Version number test (should fail). '
+  'This feature was deprecated after v1.19.0.'
+)
+void test12() { }
+
+@Deprecated(
+  'Version number test (should fail). '
+  'This feature was deprecated after v1.20.0.'
+)
+void test13() { }
+
+@Deprecated(
+  'Version number test (should fail). '
+  'This feature was deprecated after v1.21.0.'
+)
+void test14() { }
+
+@Deprecated(
+  'Version number test (should fail). '
+  'This feature was deprecated after v3.1.0.'
+)
+void test15() { }
+
+@Deprecated(
+  'Version number test (should be fine). '
+  'This feature was deprecated after v0.1.0.'
+)
+void test16() { }
+
+@Deprecated(
+  'Version number test (should be fine). '
+  'This feature was deprecated after v1.20.0-1.0.pre.'
+)
+void test17() { }
+
+@Deprecated(
+  "Double quotes' test (should fail). "
+  'This feature was deprecated after v2.1.0-11.0.pre.'
+)
+void test18() { }

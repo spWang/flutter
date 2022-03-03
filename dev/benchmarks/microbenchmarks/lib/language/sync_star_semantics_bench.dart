@@ -1,4 +1,4 @@
-// Copyright 2019 The Flutter Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,7 +11,7 @@ const int _kNumWarmUp = 100;
 
 void main() {
   final List<String> words = 'Lorem Ipsum is simply dummy text of the printing and'
-    'typesetting industry. Lorem Ipsum has been the industry\'s'
+    " typesetting industry. Lorem Ipsum has been the industry's"
     ' standard dummy text ever since the 1500s, when an unknown'
     ' printer took a galley of type and scrambled it to make a'
     ' type specimen book'.split(' ');
@@ -19,9 +19,9 @@ void main() {
   for (int i = 0; i < words.length; i++) {
     if (i.isEven) {
       data.add(
-        InlineSpanSemanticsInformation(words[i], isPlaceholder: false),
+        InlineSpanSemanticsInformation(words[i]),
       );
-    } else if (i % 2 == 0) {
+    } else if (i.isEven) {
       data.add(
         InlineSpanSemanticsInformation(words[i], isPlaceholder: true),
       );
@@ -71,7 +71,7 @@ void main() {
 
 String consumeSpan(Iterable<InlineSpanSemanticsInformation> items) {
   String result = '';
-  for (InlineSpanSemanticsInformation span in items) {
+  for (final InlineSpanSemanticsInformation span in items) {
     result += span.text;
   }
   return result;
@@ -80,8 +80,8 @@ String consumeSpan(Iterable<InlineSpanSemanticsInformation> items) {
 
 Iterable<InlineSpanSemanticsInformation> combineSemanticsInfoSyncStar(List<InlineSpanSemanticsInformation> inputs) sync* {
   String workingText = '';
-  String workingLabel;
-  for (InlineSpanSemanticsInformation info in inputs) {
+  String? workingLabel;
+  for (final InlineSpanSemanticsInformation info in inputs) {
     if (info.requiresOwnNode) {
       if (workingText != null) {
         yield InlineSpanSemanticsInformation(workingText, semanticsLabel: workingLabel ?? workingText);
@@ -92,8 +92,9 @@ Iterable<InlineSpanSemanticsInformation> combineSemanticsInfoSyncStar(List<Inlin
     } else {
       workingText += info.text;
       workingLabel ??= '';
-      if (info.semanticsLabel != null) {
-        workingLabel += info.semanticsLabel;
+      final String? infoSemanticsLabel = info.semanticsLabel;
+      if (infoSemanticsLabel != null) {
+        workingLabel += infoSemanticsLabel;
       } else {
         workingLabel += info.text;
       }
@@ -108,9 +109,9 @@ Iterable<InlineSpanSemanticsInformation> combineSemanticsInfoSyncStar(List<Inlin
 
 Iterable<InlineSpanSemanticsInformation> combineSemanticsInfoList(List<InlineSpanSemanticsInformation> inputs) {
   String workingText = '';
-  String workingLabel;
+  String? workingLabel;
   final List<InlineSpanSemanticsInformation> result = <InlineSpanSemanticsInformation>[];
-  for (InlineSpanSemanticsInformation info in inputs) {
+  for (final InlineSpanSemanticsInformation info in inputs) {
     if (info.requiresOwnNode) {
       if (workingText != null) {
         result.add(InlineSpanSemanticsInformation(workingText, semanticsLabel: workingLabel ?? workingText));
@@ -121,8 +122,9 @@ Iterable<InlineSpanSemanticsInformation> combineSemanticsInfoList(List<InlineSpa
     } else {
       workingText += info.text;
       workingLabel ??= '';
-      if (info.semanticsLabel != null) {
-        workingLabel += info.semanticsLabel;
+      final String? infoSemanticsLabel = info.semanticsLabel;
+      if (infoSemanticsLabel != null) {
+        workingLabel += infoSemanticsLabel;
       } else {
         workingLabel += info.text;
       }

@@ -1,11 +1,9 @@
-// Copyright 2019 The Flutter Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:meta/meta.dart';
 
 final Stopwatch _stopwatch = Stopwatch();
 
@@ -50,8 +48,8 @@ class FlutterCompactFormatter {
   /// this is Windows or not outputting to a terminal.
   String get _noColor => useColor ? '\u001b[0m' : '';
 
-  /// The termianl escape for clearing the line, or a carriage return if
-  /// this is Windows or not outputting to a termianl.
+  /// The terminal escape for clearing the line, or a carriage return if
+  /// this is Windows or not outputting to a terminal.
   String get _clearLine => useColor ? '\x1b[2K\r' : '\r';
 
   final Map<int, TestResult> _tests = <int, TestResult>{};
@@ -75,16 +73,16 @@ class FlutterCompactFormatter {
   ///
   /// Callers are responsible for splitting multiple lines before calling this
   /// method.
-  TestResult processRawOutput(String raw) {
+  TestResult? processRawOutput(String raw) {
     assert(raw != null);
     // We might be getting messages from Flutter Tool about updating/building.
     if (!raw.startsWith('{')) {
       print(raw);
       return null;
     }
-    final Map<String, dynamic> decoded = json.decode(raw);
-    final TestResult originalResult = _tests[decoded['testID']];
-    switch (decoded['type']) {
+    final Map<String, dynamic> decoded = json.decode(raw) as Map<String, dynamic>;
+    final TestResult? originalResult = _tests[decoded['testID']];
+    switch (decoded['type'] as String) {
       case 'done':
         stdout.write(_clearLine);
         stdout.write('$_bold${_stopwatch.elapsed}$_noColor ');
@@ -92,7 +90,7 @@ class FlutterCompactFormatter {
             '$_green+$successes $_yellow~$skips $_red-$failures:$_bold$_gray Done.$_noColor');
         break;
       case 'testStart':
-        final Map<String, dynamic> testData = decoded['test'];
+        final Map<String, dynamic> testData = decoded['test'] as Map<String, dynamic>;
         if (testData['url'] == null) {
           started += 1;
           stdout.write(_clearLine);
@@ -101,20 +99,20 @@ class FlutterCompactFormatter {
               '$_green+$successes $_yellow~$skips $_red-$failures: $_gray${testData['name']}$_noColor');
           break;
         }
-        _tests[testData['id']] = TestResult(
-          id: testData['id'],
-          name: testData['name'],
-          line: testData['root_line'] ?? testData['line'],
-          column: testData['root_column'] ?? testData['column'],
-          path: testData['root_url'] ?? testData['url'],
-          startTime: decoded['time'],
+        _tests[testData['id'] as int] = TestResult(
+          id: testData['id'] as int,
+          name: testData['name'] as String,
+          line: testData['root_line'] as int? ?? testData['line'] as int,
+          column: testData['root_column'] as int? ?? testData['column'] as int,
+          path: testData['root_url'] as String? ?? testData['url'] as String,
+          startTime: decoded['time'] as int,
         );
         break;
       case 'testDone':
         if (originalResult == null) {
           break;
         }
-        originalResult.endTime = decoded['time'];
+        originalResult.endTime = decoded['time'] as int;
         if (decoded['skipped'] == true) {
           skips += 1;
           originalResult.status = TestStatus.skipped;
@@ -129,8 +127,8 @@ class FlutterCompactFormatter {
         }
         break;
       case 'error':
-        final String error = decoded['error'];
-        final String stackTrace = decoded['stackTrace'];
+        final String error = decoded['error'] as String;
+        final String stackTrace = decoded['stackTrace'] as String;
         if (originalResult != null) {
           originalResult.errorMessage = error;
           originalResult.stackTrace = stackTrace;
@@ -143,7 +141,7 @@ class FlutterCompactFormatter {
         break;
       case 'print':
         if (originalResult != null) {
-          originalResult.messages.add(decoded['message']);
+          originalResult.messages.add(decoded['message'] as String);
         }
         break;
       case 'group':
@@ -160,7 +158,7 @@ class FlutterCompactFormatter {
   void finish() {
     final List<String> skipped = <String>[];
     final List<String> failed = <String>[];
-    for (TestResult result in _tests.values) {
+    for (final TestResult result in _tests.values) {
       switch (result.status) {
         case TestStatus.started:
           failed.add('${_red}Unexpectedly failed to complete a test!');
@@ -173,9 +171,9 @@ class FlutterCompactFormatter {
         case TestStatus.failed:
           failed.addAll(<String>[
             '$_bold${_red}Failed ${result.name} (${result.pathLineColumn}):',
-            result.errorMessage,
+            result.errorMessage!,
             _noColor + _red,
-            result.stackTrace,
+            result.stackTrace!,
           ]);
           failed.addAll(result.messages);
           failed.add(_noColor);
@@ -209,12 +207,12 @@ enum TestStatus {
 /// The detailed status of a test run.
 class TestResult {
   TestResult({
-    @required this.id,
-    @required this.name,
-    @required this.line,
-    @required this.column,
-    @required this.path,
-    @required this.startTime,
+    required this.id,
+    required this.name,
+    required this.line,
+    required this.column,
+    required this.path,
+    required this.startTime,
     this.status = TestStatus.started,
   })  : assert(id != null),
         assert(name != null),
@@ -254,13 +252,13 @@ class TestResult {
 
   /// The error message from the test, from an `expect`, an [Exception] or
   /// [Error].
-  String errorMessage;
+  String? errorMessage;
 
   /// The stacktrace from a test failure.
-  String stackTrace;
+  String? stackTrace;
 
   /// The time, in milliseconds relative to suite startup, that the test ended.
-  int endTime;
+  int? endTime;
 
   /// The total time, in milliseconds, that the test took.
   int get totalTime => (endTime ?? _stopwatch.elapsedMilliseconds) - startTime;

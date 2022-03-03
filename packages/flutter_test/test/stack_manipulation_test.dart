@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,7 @@ void main() {
   test('stack manipulation: reportExpectCall', () {
     try {
       expect(false, isTrue);
-      throw 'unexpectedly did not throw';
+      fail('unexpectedly did not throw');
     } catch (e, stack) {
       final List<DiagnosticsNode> information = <DiagnosticsNode>[];
       expect(reportExpectCall(stack, information), 4);
@@ -19,12 +19,8 @@ void main() {
       expect(lines[1], matches(r'^  .*stack_manipulation_test.dart line [0-9]+$'));
     }
 
-    try {
-      throw null;
-    } catch (e, stack) {
-      final List<DiagnosticsNode> information = <DiagnosticsNode>[];
-      expect(reportExpectCall(stack, information), 0);
-      expect(information, isEmpty);
-    }
+    final List<DiagnosticsNode> information = <DiagnosticsNode>[];
+    expect(reportExpectCall(StackTrace.current, information), 0);
+    expect(information, isEmpty);
   });
 }

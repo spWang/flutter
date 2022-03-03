@@ -1,9 +1,12 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// This file is run as part of a reduced test set in CI on Mac and Windows
+// machines.
+@Tags(<String>['reduced-test-set'])
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -46,6 +49,7 @@ void main() {
 
     expect(material.clipBehavior, cardTheme.clipBehavior);
     expect(material.color, cardTheme.color);
+    expect(material.shadowColor, cardTheme.shadowColor);
     expect(material.elevation, cardTheme.elevation);
     expect(container.margin, cardTheme.margin);
     expect(material.shape, cardTheme.shape);
@@ -54,6 +58,7 @@ void main() {
   testWidgets('Card widget properties take priority over theme', (WidgetTester tester) async {
     const Clip clip = Clip.hardEdge;
     const Color color = Colors.orange;
+    const Color shadowColor = Colors.pink;
     const double elevation = 7.0;
     const EdgeInsets margin = EdgeInsets.all(3.0);
     const ShapeBorder shape = RoundedRectangleBorder(
@@ -66,6 +71,7 @@ void main() {
         body: Card(
           clipBehavior: clip,
           color: color,
+          shadowColor: shadowColor,
           elevation: elevation,
           margin: margin,
           shape: shape,
@@ -78,6 +84,7 @@ void main() {
 
     expect(material.clipBehavior, clip);
     expect(material.color, color);
+    expect(material.shadowColor, shadowColor);
     expect(material.elevation, elevation);
     expect(container.margin, margin);
     expect(material.shape, shape);
@@ -128,7 +135,7 @@ void main() {
           key: painterKey,
           child: Center(
             child: Card(
-              child: SizedBox.fromSize(size: const Size(200, 300),),
+              child: SizedBox.fromSize(size: const Size(200, 300)),
             ),
           ),
         ),
@@ -139,13 +146,14 @@ void main() {
       find.byKey(painterKey),
       matchesGoldenFile('card_theme.custom_shape.png'),
     );
-  },  skip: isBrowser);
+  });
 }
 
 CardTheme _cardTheme() {
   return const CardTheme(
     clipBehavior: Clip.antiAlias,
     color: Colors.green,
+    shadowColor: Colors.red,
     elevation: 6.0,
     margin: EdgeInsets.all(7.0),
     shape: RoundedRectangleBorder(

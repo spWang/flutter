@@ -1,9 +1,9 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('repaint boundary with constraint changes', (WidgetTester tester) async {
@@ -15,7 +15,7 @@ void main() {
 }
 
 class RelayoutBoundariesCrash extends StatefulWidget {
-  const RelayoutBoundariesCrash({Key key}) : super(key: key);
+  const RelayoutBoundariesCrash({Key? key}) : super(key: key);
 
   @override
   RelayoutBoundariesCrashState createState() => RelayoutBoundariesCrashState();

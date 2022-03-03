@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,12 +21,13 @@ import 'framework.dart';
 class BottomNavigationBarItem {
   /// Creates an item that is used with [BottomNavigationBar.items].
   ///
-  /// The argument [icon] should not be null and the argument [title] should not be null when used in a Material Design's [BottomNavigationBar].
+  /// The argument [icon] should not be null and the argument [label] should not be null when used in a Material Design's [BottomNavigationBar].
   const BottomNavigationBarItem({
-    @required this.icon,
-    this.title,
-    Widget activeIcon,
+    required this.icon,
+    this.label,
+    Widget? activeIcon,
     this.backgroundColor,
+    this.tooltip,
   }) : activeIcon = activeIcon ?? icon,
        assert(icon != null);
 
@@ -60,8 +61,10 @@ class BottomNavigationBarItem {
   ///  * [BottomNavigationBarItem.icon], for a description of how to pair icons.
   final Widget activeIcon;
 
-  /// The title of the item. If the title is not provided only the icon will be shown when not used in a Material Design [BottomNavigationBar].
-  final Widget title;
+  /// The text label for this [BottomNavigationBarItem].
+  ///
+  /// This will be used to create a [Text] widget to put in the bottom navigation bar.
+  final String? label;
 
   /// The color of the background radial animation for material [BottomNavigationBar].
   ///
@@ -75,6 +78,15 @@ class BottomNavigationBarItem {
   /// See also:
   ///
   ///  * [Icon.color] and [ImageIcon.color] to control the foreground color of
-  ///     the icons themselves.
-  final Color backgroundColor;
+  ///    the icons themselves.
+  final Color? backgroundColor;
+
+  /// The text to display in the tooltip for this [BottomNavigationBarItem], when
+  /// the user long presses the item.
+  ///
+  /// The [Tooltip] will only appear on an item in a Material design [BottomNavigationBar], and
+  /// when the string is not empty.
+  ///
+  /// Defaults to null, in which case the [label] text will be used.
+  final String? tooltip;
 }

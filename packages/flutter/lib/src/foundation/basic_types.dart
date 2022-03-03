@@ -1,8 +1,7 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:collection';
 
 // COMMON SIGNATURES
@@ -11,7 +10,9 @@ export 'dart:ui' show VoidCallback;
 
 /// Signature for callbacks that report that an underlying value has changed.
 ///
-/// See also [ValueSetter].
+/// See also:
+///
+///  * [ValueSetter], for callbacks that report that a value has been set.
 typedef ValueChanged<T> = void Function(T value);
 
 /// Signature for callbacks that report that a value has been set.
@@ -112,7 +113,7 @@ class CachingIterable<E> extends IterableBase<E> {
   /// once. If you have an [Iterable], you can pass its [iterator]
   /// field as the argument to this constructor.
   ///
-  /// You can use a `sync*` function with this as follows:
+  /// You can this with an existing `sync*` function as follows:
   ///
   /// ```dart
   /// Iterable<int> range(int start, int end) sync* {
@@ -124,6 +125,10 @@ class CachingIterable<E> extends IterableBase<E> {
   /// print(i.length); // walks the list
   /// print(i.length); // efficient
   /// ```
+  ///
+  /// Beware that this will eagerly evaluate the `range` iterable, and because
+  /// of that it would be better to just implement `range` as something that
+  /// returns a `List` to begin with if possible.
   CachingIterable(this._prefillIterator);
 
   final Iterator<E> _prefillIterator;
@@ -135,18 +140,18 @@ class CachingIterable<E> extends IterableBase<E> {
   }
 
   @override
-  Iterable<T> map<T>(T f(E e)) {
-    return CachingIterable<T>(super.map<T>(f).iterator);
+  Iterable<T> map<T>(T Function(E e) toElement) {
+    return CachingIterable<T>(super.map<T>(toElement).iterator);
   }
 
   @override
-  Iterable<E> where(bool test(E element)) {
+  Iterable<E> where(bool Function(E element) test) {
     return CachingIterable<E>(super.where(test).iterator);
   }
 
   @override
-  Iterable<T> expand<T>(Iterable<T> f(E element)) {
-    return CachingIterable<T>(super.expand<T>(f).iterator);
+  Iterable<T> expand<T>(Iterable<T> Function(E element) toElements) {
+    return CachingIterable<T>(super.expand<T>(toElements).iterator);
   }
 
   @override
@@ -155,7 +160,7 @@ class CachingIterable<E> extends IterableBase<E> {
   }
 
   @override
-  Iterable<E> takeWhile(bool test(E value)) {
+  Iterable<E> takeWhile(bool Function(E value) test) {
     return CachingIterable<E>(super.takeWhile(test).iterator);
   }
 
@@ -165,7 +170,7 @@ class CachingIterable<E> extends IterableBase<E> {
   }
 
   @override
-  Iterable<E> skipWhile(bool test(E value)) {
+  Iterable<E> skipWhile(bool Function(E value) test) {
     return CachingIterable<E>(super.skipWhile(test).iterator);
   }
 
@@ -178,7 +183,7 @@ class CachingIterable<E> extends IterableBase<E> {
   @override
   List<E> toList({ bool growable = true }) {
     _precacheEntireList();
-    return List<E>.from(_results, growable: growable);
+    return List<E>.of(_results, growable: growable);
   }
 
   void _precacheEntireList() {
@@ -203,7 +208,7 @@ class _LazyListIterator<E> implements Iterator<E> {
   E get current {
     assert(_index >= 0); // called "current" before "moveNext()"
     if (_index < 0 || _index == _owner._results.length)
-      return null;
+      throw StateError('current can not be call after moveNext has returned false');
     return _owner._results[_index];
   }
 
@@ -237,3 +242,9 @@ class Factory<T> {
   }
 }
 
+/// Linearly interpolate between two `Duration`s.
+Duration lerpDuration(Duration a, Duration b, double t) {
+  return Duration(
+    microseconds: (a.inMicroseconds + (b.inMicroseconds - a.inMicroseconds) * t).round(),
+  );
+}

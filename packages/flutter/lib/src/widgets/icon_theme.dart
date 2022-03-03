@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,9 +18,9 @@ class IconTheme extends InheritedTheme {
   ///
   /// Both [data] and [child] arguments must not be null.
   const IconTheme({
-    Key key,
-    @required this.data,
-    @required Widget child,
+    Key? key,
+    required this.data,
+    required Widget child,
   }) : assert(data != null),
        assert(child != null),
        super(key: key, child: child);
@@ -30,9 +30,9 @@ class IconTheme extends InheritedTheme {
   ///
   /// The [data] and [child] arguments must not be null.
   static Widget merge({
-    Key key,
-    @required IconThemeData data,
-    @required Widget child,
+    Key? key,
+    required IconThemeData data,
+    required Widget child,
   }) {
     return Builder(
       builder: (BuildContext context) {
@@ -49,9 +49,18 @@ class IconTheme extends InheritedTheme {
   final IconThemeData data;
 
   /// The data from the closest instance of this class that encloses the given
-  /// context.
+  /// context, if any.
   ///
-  /// Defaults to the current [ThemeData.iconTheme].
+  /// If there is no ambient icon theme, defaults to [IconThemeData.fallback].
+  /// The returned [IconThemeData] is concrete (all values are non-null; see
+  /// [IconThemeData.isConcrete]). Any properties on the ambient icon theme that
+  /// are null get defaulted to the values specified on
+  /// [IconThemeData.fallback].
+  ///
+  /// The [Theme] widget from the `material` library introduces an [IconTheme]
+  /// widget set to the [ThemeData.iconTheme], so in a Material Design
+  /// application, this will typically default to the icon theme from the
+  /// ambient [Theme].
   ///
   /// Typical usage is as follows:
   ///
@@ -66,11 +75,12 @@ class IconTheme extends InheritedTheme {
         size: iconThemeData.size ?? const IconThemeData.fallback().size,
         color: iconThemeData.color ?? const IconThemeData.fallback().color,
         opacity: iconThemeData.opacity ?? const IconThemeData.fallback().opacity,
+        shadows: iconThemeData.shadows ?? const IconThemeData.fallback().shadows,
       );
   }
 
   static IconThemeData _getInheritedIconThemeData(BuildContext context) {
-    final IconTheme iconTheme = context.inheritFromWidgetOfExactType(IconTheme);
+    final IconTheme? iconTheme = context.dependOnInheritedWidgetOfExactType<IconTheme>();
     return iconTheme?.data ?? const IconThemeData.fallback();
   }
 
@@ -79,8 +89,7 @@ class IconTheme extends InheritedTheme {
 
   @override
   Widget wrap(BuildContext context, Widget child) {
-    final IconTheme iconTheme = context.ancestorWidgetOfExactType(IconTheme);
-    return identical(this, iconTheme) ? child : IconTheme(data: data, child: child);
+    return IconTheme(data: data, child: child);
   }
 
   @override

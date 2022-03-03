@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -26,7 +26,8 @@ import 'package:flutter/rendering.dart';
 ///
 ///  * [ThemeData], which describes the overall theme information for the
 ///    application.
-class FloatingActionButtonThemeData extends Diagnosticable {
+@immutable
+class FloatingActionButtonThemeData with Diagnosticable {
   /// Creates a theme that can be used for
   /// [ThemeData.floatingActionButtonTheme].
   const FloatingActionButtonThemeData({
@@ -41,67 +42,116 @@ class FloatingActionButtonThemeData extends Diagnosticable {
     this.disabledElevation,
     this.highlightElevation,
     this.shape,
+    this.enableFeedback,
+    this.iconSize,
+    this.sizeConstraints,
+    this.smallSizeConstraints,
+    this.largeSizeConstraints,
+    this.extendedSizeConstraints,
+    this.extendedIconLabelSpacing,
+    this.extendedPadding,
+    this.extendedTextStyle,
   });
 
   /// Color to be used for the unselected, enabled [FloatingActionButton]'s
   /// foreground.
-  final Color foregroundColor;
+  final Color? foregroundColor;
 
   /// Color to be used for the unselected, enabled [FloatingActionButton]'s
   /// background.
-  final Color backgroundColor;
+  final Color? backgroundColor;
 
   /// The color to use for filling the button when the button has input focus.
-  final Color focusColor;
+  final Color? focusColor;
 
   /// The color to use for filling the button when the button has a pointer
   /// hovering over it.
-  final Color hoverColor;
+  final Color? hoverColor;
 
   /// The splash color for this [FloatingActionButton]'s [InkWell].
-  final Color splashColor;
+  final Color? splashColor;
 
   /// The z-coordinate to be used for the unselected, enabled
   /// [FloatingActionButton]'s elevation foreground.
-  final double elevation;
+  final double? elevation;
 
   /// The z-coordinate at which to place this button relative to its parent when
   /// the button has the input focus.
   ///
   /// This controls the size of the shadow below the floating action button.
-  final double focusElevation;
+  final double? focusElevation;
 
   /// The z-coordinate at which to place this button relative to its parent when
   /// the button is enabled and has a pointer hovering over it.
   ///
   /// This controls the size of the shadow below the floating action button.
-  final double hoverElevation;
+  final double? hoverElevation;
 
   /// The z-coordinate to be used for the disabled [FloatingActionButton]'s
   /// elevation foreground.
-  final double disabledElevation;
+  final double? disabledElevation;
 
   /// The z-coordinate to be used for the selected, enabled
   /// [FloatingActionButton]'s elevation foreground.
-  final double highlightElevation;
+  final double? highlightElevation;
 
   /// The shape to be used for the floating action button's [Material].
-  final ShapeBorder shape;
+  final ShapeBorder? shape;
+
+  /// If specified, defines the feedback property for [FloatingActionButton].
+  ///
+  /// If [FloatingActionButton.enableFeedback] is provided, [enableFeedback] is
+  /// ignored.
+  final bool? enableFeedback;
+
+  /// Overrides the default icon size for the [FloatingActionButton];
+  final double? iconSize;
+
+  /// Overrides the default size constraints for the [FloatingActionButton].
+  final BoxConstraints? sizeConstraints;
+
+  /// Overrides the default size constraints for [FloatingActionButton.small].
+  final BoxConstraints? smallSizeConstraints;
+
+  /// Overrides the default size constraints for [FloatingActionButton.large].
+  final BoxConstraints? largeSizeConstraints;
+
+  /// Overrides the default size constraints for [FloatingActionButton.extended].
+  final BoxConstraints? extendedSizeConstraints;
+
+  /// The spacing between the icon and the label for an extended
+  /// [FloatingActionButton].
+  final double? extendedIconLabelSpacing;
+
+  /// The padding for an extended [FloatingActionButton]'s content.
+  final EdgeInsetsGeometry? extendedPadding;
+
+  /// The text style for an extended [FloatingActionButton]'s label.
+  final TextStyle? extendedTextStyle;
 
   /// Creates a copy of this object with the given fields replaced with the
   /// new values.
   FloatingActionButtonThemeData copyWith({
-    Color foregroundColor,
-    Color backgroundColor,
-    Color focusColor,
-    Color hoverColor,
-    Color splashColor,
-    double elevation,
-    double focusElevation,
-    double hoverElevation,
-    double disabledElevation,
-    double highlightElevation,
-    ShapeBorder shape,
+    Color? foregroundColor,
+    Color? backgroundColor,
+    Color? focusColor,
+    Color? hoverColor,
+    Color? splashColor,
+    double? elevation,
+    double? focusElevation,
+    double? hoverElevation,
+    double? disabledElevation,
+    double? highlightElevation,
+    ShapeBorder? shape,
+    bool? enableFeedback,
+    double? iconSize,
+    BoxConstraints? sizeConstraints,
+    BoxConstraints? smallSizeConstraints,
+    BoxConstraints? largeSizeConstraints,
+    BoxConstraints? extendedSizeConstraints,
+    double? extendedIconLabelSpacing,
+    EdgeInsetsGeometry? extendedPadding,
+    TextStyle? extendedTextStyle,
   }) {
     return FloatingActionButtonThemeData(
       foregroundColor: foregroundColor ?? this.foregroundColor,
@@ -115,6 +165,15 @@ class FloatingActionButtonThemeData extends Diagnosticable {
       disabledElevation: disabledElevation ?? this.disabledElevation,
       highlightElevation: highlightElevation ?? this.highlightElevation,
       shape: shape ?? this.shape,
+      enableFeedback: enableFeedback ?? this.enableFeedback,
+      iconSize: iconSize ?? this.iconSize,
+      sizeConstraints: sizeConstraints ?? this.sizeConstraints,
+      smallSizeConstraints: smallSizeConstraints ?? this.smallSizeConstraints,
+      largeSizeConstraints: largeSizeConstraints ?? this.largeSizeConstraints,
+      extendedSizeConstraints: extendedSizeConstraints ?? this.extendedSizeConstraints,
+      extendedIconLabelSpacing: extendedIconLabelSpacing ?? this.extendedIconLabelSpacing,
+      extendedPadding: extendedPadding ?? this.extendedPadding,
+      extendedTextStyle: extendedTextStyle ?? this.extendedTextStyle,
     );
   }
 
@@ -123,7 +182,7 @@ class FloatingActionButtonThemeData extends Diagnosticable {
   /// If both arguments are null then null is returned.
   ///
   /// {@macro dart.ui.shadow.lerp}
-  static FloatingActionButtonThemeData lerp(FloatingActionButtonThemeData a, FloatingActionButtonThemeData b, double t) {
+  static FloatingActionButtonThemeData? lerp(FloatingActionButtonThemeData? a, FloatingActionButtonThemeData? b, double t) {
     assert(t != null);
     if (a == null && b == null)
       return null;
@@ -139,25 +198,41 @@ class FloatingActionButtonThemeData extends Diagnosticable {
       disabledElevation: lerpDouble(a?.disabledElevation, b?.disabledElevation, t),
       highlightElevation: lerpDouble(a?.highlightElevation, b?.highlightElevation, t),
       shape: ShapeBorder.lerp(a?.shape, b?.shape, t),
+      enableFeedback: t < 0.5 ? a?.enableFeedback : b?.enableFeedback,
+      iconSize: lerpDouble(a?.iconSize, b?.iconSize, t),
+      sizeConstraints: BoxConstraints.lerp(a?.sizeConstraints, b?.sizeConstraints, t),
+      smallSizeConstraints: BoxConstraints.lerp(a?.smallSizeConstraints, b?.smallSizeConstraints, t),
+      largeSizeConstraints: BoxConstraints.lerp(a?.largeSizeConstraints, b?.largeSizeConstraints, t),
+      extendedSizeConstraints: BoxConstraints.lerp(a?.extendedSizeConstraints, b?.extendedSizeConstraints, t),
+      extendedIconLabelSpacing: lerpDouble(a?.extendedIconLabelSpacing, b?.extendedIconLabelSpacing, t),
+      extendedPadding: EdgeInsetsGeometry.lerp(a?.extendedPadding, b?.extendedPadding, t),
+      extendedTextStyle: TextStyle.lerp(a?.extendedTextStyle, b?.extendedTextStyle, t),
     );
   }
 
   @override
-  int get hashCode {
-    return hashValues(
-      foregroundColor,
-      backgroundColor,
-      focusColor,
-      hoverColor,
-      splashColor,
-      elevation,
-      focusElevation,
-      hoverElevation,
-      disabledElevation,
-      highlightElevation,
-      shape,
-    );
-  }
+  int get hashCode => Object.hash(
+    foregroundColor,
+    backgroundColor,
+    focusColor,
+    hoverColor,
+    splashColor,
+    elevation,
+    focusElevation,
+    hoverElevation,
+    disabledElevation,
+    highlightElevation,
+    shape,
+    enableFeedback,
+    iconSize,
+    sizeConstraints,
+    smallSizeConstraints,
+    largeSizeConstraints,
+    extendedSizeConstraints,
+    extendedIconLabelSpacing,
+    extendedPadding,
+    extendedTextStyle,
+  );
 
   @override
   bool operator ==(Object other) {
@@ -165,35 +240,52 @@ class FloatingActionButtonThemeData extends Diagnosticable {
       return true;
     if (other.runtimeType != runtimeType)
       return false;
-    final FloatingActionButtonThemeData otherData = other;
-    return otherData.foregroundColor == foregroundColor
-        && otherData.backgroundColor == backgroundColor
-        && otherData.focusColor == focusColor
-        && otherData.hoverColor == hoverColor
-        && otherData.splashColor == splashColor
-        && otherData.elevation == elevation
-        && otherData.focusElevation == focusElevation
-        && otherData.hoverElevation == hoverElevation
-        && otherData.disabledElevation == disabledElevation
-        && otherData.highlightElevation == highlightElevation
-        && otherData.shape == shape;
+    return other is FloatingActionButtonThemeData
+        && other.foregroundColor == foregroundColor
+        && other.backgroundColor == backgroundColor
+        && other.focusColor == focusColor
+        && other.hoverColor == hoverColor
+        && other.splashColor == splashColor
+        && other.elevation == elevation
+        && other.focusElevation == focusElevation
+        && other.hoverElevation == hoverElevation
+        && other.disabledElevation == disabledElevation
+        && other.highlightElevation == highlightElevation
+        && other.shape == shape
+        && other.enableFeedback == enableFeedback
+        && other.iconSize == iconSize
+        && other.sizeConstraints == sizeConstraints
+        && other.smallSizeConstraints == smallSizeConstraints
+        && other.largeSizeConstraints == largeSizeConstraints
+        && other.extendedSizeConstraints == extendedSizeConstraints
+        && other.extendedIconLabelSpacing == extendedIconLabelSpacing
+        && other.extendedPadding == extendedPadding
+        && other.extendedTextStyle == extendedTextStyle;
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    const FloatingActionButtonThemeData defaultData = FloatingActionButtonThemeData();
 
-    properties.add(ColorProperty('foregroundColor', foregroundColor, defaultValue: defaultData.foregroundColor));
-    properties.add(ColorProperty('backgroundColor', backgroundColor, defaultValue: defaultData.backgroundColor));
-    properties.add(ColorProperty('focusColor', focusColor, defaultValue: defaultData.focusColor));
-    properties.add(ColorProperty('hoverColor', hoverColor, defaultValue: defaultData.hoverColor));
-    properties.add(ColorProperty('splashColor', splashColor, defaultValue: defaultData.splashColor));
-    properties.add(DoubleProperty('elevation', elevation, defaultValue: defaultData.elevation));
-    properties.add(DoubleProperty('focusElevation', focusElevation, defaultValue: defaultData.focusElevation));
-    properties.add(DoubleProperty('hoverElevation', hoverElevation, defaultValue: defaultData.hoverElevation));
-    properties.add(DoubleProperty('disabledElevation', disabledElevation, defaultValue: defaultData.disabledElevation));
-    properties.add(DoubleProperty('highlightElevation', highlightElevation, defaultValue: defaultData.highlightElevation));
-    properties.add(DiagnosticsProperty<ShapeBorder>('shape', shape, defaultValue: defaultData.shape));
+    properties.add(ColorProperty('foregroundColor', foregroundColor, defaultValue: null));
+    properties.add(ColorProperty('backgroundColor', backgroundColor, defaultValue: null));
+    properties.add(ColorProperty('focusColor', focusColor, defaultValue: null));
+    properties.add(ColorProperty('hoverColor', hoverColor, defaultValue: null));
+    properties.add(ColorProperty('splashColor', splashColor, defaultValue: null));
+    properties.add(DoubleProperty('elevation', elevation, defaultValue: null));
+    properties.add(DoubleProperty('focusElevation', focusElevation, defaultValue: null));
+    properties.add(DoubleProperty('hoverElevation', hoverElevation, defaultValue: null));
+    properties.add(DoubleProperty('disabledElevation', disabledElevation, defaultValue: null));
+    properties.add(DoubleProperty('highlightElevation', highlightElevation, defaultValue: null));
+    properties.add(DiagnosticsProperty<ShapeBorder>('shape', shape, defaultValue: null));
+    properties.add(DiagnosticsProperty<bool>('enableFeedback', enableFeedback, defaultValue: null));
+    properties.add(DoubleProperty('iconSize', iconSize, defaultValue: null));
+    properties.add(DiagnosticsProperty<BoxConstraints>('sizeConstraints', sizeConstraints, defaultValue: null));
+    properties.add(DiagnosticsProperty<BoxConstraints>('smallSizeConstraints', smallSizeConstraints, defaultValue: null));
+    properties.add(DiagnosticsProperty<BoxConstraints>('largeSizeConstraints', largeSizeConstraints, defaultValue: null));
+    properties.add(DiagnosticsProperty<BoxConstraints>('extendedSizeConstraints', extendedSizeConstraints, defaultValue: null));
+    properties.add(DoubleProperty('extendedIconLabelSpacing', extendedIconLabelSpacing, defaultValue: null));
+    properties.add(DiagnosticsProperty<EdgeInsetsGeometry>('extendedPadding', extendedPadding, defaultValue: null));
+    properties.add(DiagnosticsProperty<TextStyle>('extendedTextStyle', extendedTextStyle, defaultValue: null));
   }
 }

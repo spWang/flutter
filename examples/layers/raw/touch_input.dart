@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-ui.Color color;
+late ui.Color color;
 
 ui.Picture paint(ui.Rect paintBounds) {
   // First we create a PictureRecorder to record the commands we're going to
@@ -41,7 +41,7 @@ ui.Picture paint(ui.Rect paintBounds) {
 ui.Scene composite(ui.Picture picture, ui.Rect paintBounds) {
   // The device pixel ratio gives an approximate ratio of the size of pixels on
   // the device's screen to "normal" sized pixels. We commonly work in logical
-  // pixels, which are then scalled by the device pixel ratio before being drawn
+  // pixels, which are then scaled by the device pixel ratio before being drawn
   // on the screen.
   final double devicePixelRatio = ui.window.devicePixelRatio;
 
@@ -79,7 +79,7 @@ void beginFrame(Duration timeStamp) {
 void handlePointerDataPacket(ui.PointerDataPacket packet) {
   // The pointer packet contains a number of pointer movements, which we iterate
   // through and process.
-  for (ui.PointerData datum in packet.data) {
+  for (final ui.PointerData datum in packet.data) {
     if (datum.change == ui.PointerChange.down) {
       // If the pointer went down, we change the color of the circle to blue.
       color = const ui.Color(0xFF0000FF);

@@ -1,4 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,7 +19,7 @@ import 'framework.dart';
 /// even if the [notifier] fires multiple times between two frames.
 ///
 /// Typically this class is subclassed with a class that provides an `of` static
-/// method that calls [BuildContext.inheritFromWidgetOfExactType] with that
+/// method that calls [BuildContext.dependOnInheritedWidgetOfExactType] with that
 /// class.
 ///
 /// The [updateShouldNotify] method may also be overridden, to change the logic
@@ -27,6 +27,23 @@ import 'framework.dart';
 /// method is called with the old [notifier] in the case of the [notifier] being
 /// changed. When it returns true, the dependents are marked as needing to be
 /// rebuilt this frame.
+///
+/// {@tool dartpad}
+/// This example shows three spinning squares that use the value of the notifier
+/// on an ancestor [InheritedNotifier] (`SpinModel`) to give them their
+/// rotation. The [InheritedNotifier] doesn't need to know about the children,
+/// and the `notifier` argument doesn't need to be an animation controller, it
+/// can be anything that implements [Listenable] (like a [ChangeNotifier]).
+///
+/// The `SpinModel` class could just as easily listen to another object (say, a
+/// separate object that keeps the value of an input or data model value) that
+/// is a [Listenable], and get the value from that. The descendants also don't
+/// need to have an instance of the [InheritedNotifier] in order to use it, they
+/// just need to know that there is one in their ancestry. This can help with
+/// decoupling widgets from their models.
+///
+/// ** See code in examples/api/lib/widgets/inherited_notifier/inherited_notifier.0.dart **
+/// {@end-tool}
 ///
 /// See also:
 ///
@@ -44,9 +61,9 @@ abstract class InheritedNotifier<T extends Listenable> extends InheritedWidget {
   ///
   /// The [child] argument must not be null.
   const InheritedNotifier({
-    Key key,
+    Key? key,
     this.notifier,
-    @required Widget child,
+    required Widget child,
   }) : assert(child != null),
        super(key: key, child: child);
 
@@ -62,7 +79,7 @@ abstract class InheritedNotifier<T extends Listenable> extends InheritedWidget {
   ///
   /// While the [notifier] is null, no notifications are sent, since the null
   /// object cannot itself send notifications.
-  final T notifier;
+  final T? notifier;
 
   @override
   bool updateShouldNotify(InheritedNotifier<T> oldWidget) {
@@ -70,7 +87,7 @@ abstract class InheritedNotifier<T extends Listenable> extends InheritedWidget {
   }
 
   @override
-  _InheritedNotifierElement<T> createElement() => _InheritedNotifierElement<T>(this);
+  InheritedElement createElement() => _InheritedNotifierElement<T>(this);
 }
 
 class _InheritedNotifierElement<T extends Listenable> extends InheritedElement {
@@ -78,15 +95,12 @@ class _InheritedNotifierElement<T extends Listenable> extends InheritedElement {
     widget.notifier?.addListener(_handleUpdate);
   }
 
-  @override
-  InheritedNotifier<T> get widget => super.widget;
-
   bool _dirty = false;
 
   @override
   void update(InheritedNotifier<T> newWidget) {
-    final T oldNotifier = widget.notifier;
-    final T newNotifier = newWidget.notifier;
+    final T? oldNotifier = (widget as InheritedNotifier<T>).notifier;
+    final T? newNotifier = newWidget.notifier;
     if (oldNotifier != newNotifier) {
       oldNotifier?.removeListener(_handleUpdate);
       newNotifier?.addListener(_handleUpdate);
@@ -97,7 +111,7 @@ class _InheritedNotifierElement<T extends Listenable> extends InheritedElement {
   @override
   Widget build() {
     if (_dirty)
-      notifyClients(widget);
+      notifyClients(widget as InheritedNotifier<T>);
     return super.build();
   }
 
@@ -114,7 +128,7 @@ class _InheritedNotifierElement<T extends Listenable> extends InheritedElement {
 
   @override
   void unmount() {
-    widget.notifier?.removeListener(_handleUpdate);
+    (widget as InheritedNotifier<T>).notifier?.removeListener(_handleUpdate);
     super.unmount();
   }
 }

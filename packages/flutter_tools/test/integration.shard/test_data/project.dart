@@ -1,28 +1,52 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-
 import 'package:file/file.dart';
-import 'package:flutter_tools/src/base/file_system.dart';
 
 import '../test_utils.dart';
+import 'deferred_components_config.dart';
+
+const String _kDefaultHtml  = '''
+<html>
+    <head>
+        <title>Hello, World</title>
+    </head>
+    <body>
+        <script src="main.dart.js"></script>
+    </body>
+</html>
+''';
 
 abstract class Project {
-  Directory dir;
+  late Directory dir;
 
   String get pubspec;
-  String get main;
+  String? get main => null;
+  String? get test => null;
+  String? get generatedFile => null;
+  DeferredComponentsConfig? get deferredComponents => null;
 
   Uri get mainDart => Uri.parse('package:test/main.dart');
 
   Future<void> setUpIn(Directory dir) async {
     this.dir = dir;
-    writeFile(fs.path.join(dir.path, 'pubspec.yaml'), pubspec);
+    writeFile(fileSystem.path.join(dir.path, 'pubspec.yaml'), pubspec);
+    final String? main = this.main;
     if (main != null) {
-      writeFile(fs.path.join(dir.path, 'lib', 'main.dart'), main);
+      writeFile(fileSystem.path.join(dir.path, 'lib', 'main.dart'), main);
     }
+    final String? test = this.test;
+    if (test != null) {
+      writeFile(fileSystem.path.join(dir.path, 'test', 'test.dart'), test);
+    }
+    final String? generatedFile = this.generatedFile;
+    if (generatedFile != null) {
+      writeFile(fileSystem.path.join(dir.path, '.dart_tool', 'flutter_gen', 'flutter_gen.dart'), generatedFile);
+    }
+    deferredComponents?.setUpIn(dir);
+    writeFile(fileSystem.path.join(dir.path, 'web', 'index.html'), _kDefaultHtml);
+    writePackages(dir.path);
     await getPackages(dir.path);
   }
 

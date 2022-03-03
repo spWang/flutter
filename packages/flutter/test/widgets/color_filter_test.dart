@@ -1,10 +1,15 @@
-// Copyright 2019 The Flutter Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter_test/flutter_test.dart';
+// This file is run as part of a reduced test set in CI on Mac and Windows
+// machines.
+@Tags(<String>['reduced-test-set'])
+
+@TestOn('!chrome')
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('Color filter - red', (WidgetTester tester) async {
@@ -73,7 +78,7 @@ void main() {
 
     await pumpWithColor(Colors.red);
     final RenderObject renderObject = tester.firstRenderObject(find.byType(ColorFiltered));
-    final ColorFilterLayer originalLayer = renderObject.debugLayer;
+    final ColorFilterLayer originalLayer = renderObject.debugLayer! as ColorFilterLayer;
     expect(originalLayer, isNotNull);
 
     // Change color to force a repaint.

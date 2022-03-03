@@ -1,11 +1,11 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'bitfield.dart' as bitfield;
 
 /// The dart:io implementation of [bitfield.kMaxUnsignedSMI].
-const int kMaxUnsignedSMI = 0x3FFFFFFFFFFFFFFF;
+const int kMaxUnsignedSMI = 0x3FFFFFFFFFFFFFFF; // ignore: avoid_js_rounded_ints, (VM-only code)
 
 /// The dart:io implementation of [bitfield.Bitfield].
 class BitField<T extends dynamic> implements bitfield.BitField<T> {
@@ -28,17 +28,19 @@ class BitField<T extends dynamic> implements bitfield.BitField<T> {
 
   @override
   bool operator [](T index) {
-    assert(index.index < _length);
-    return (_bits & 1 << index.index) > 0;
+    final int intIndex = index.index as int;
+    assert(intIndex < _length);
+    return (_bits & 1 << intIndex) > 0;
   }
 
   @override
   void operator []=(T index, bool value) {
-    assert(index.index < _length);
+    final int intIndex = index.index as int;
+    assert(intIndex < _length);
     if (value)
-      _bits = _bits | (1 << index.index);
+      _bits = _bits | (1 << intIndex);
     else
-      _bits = _bits & ~(1 << index.index);
+      _bits = _bits & ~(1 << intIndex);
   }
 
   @override

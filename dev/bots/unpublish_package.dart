@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,10 +21,10 @@ import 'package:path/path.dart' as path;
 import 'package:platform/platform.dart' show Platform, LocalPlatform;
 import 'package:process/process.dart';
 
-const String gsBase = 'gs://flutter_infra';
+const String gsBase = 'gs://flutter_infra_release';
 const String releaseFolder = '/releases';
 const String gsReleaseFolder = '$gsBase$releaseFolder';
-const String baseUrl = 'https://storage.googleapis.com/flutter_infra';
+const String baseUrl = 'https://storage.googleapis.com/flutter_infra_release';
 
 /// Exception class for when a process fails to run, so we can catch
 /// it and provide something more readable than a stack trace.
@@ -32,7 +32,7 @@ class UnpublishException implements Exception {
   UnpublishException(this.message, [this.result]);
 
   final String message;
-  final ProcessResult result;
+  final ProcessResult? result;
   int get exitCode => result?.exitCode ?? -1;
 
   @override
@@ -41,7 +41,7 @@ class UnpublishException implements Exception {
     if (message != null) {
       output += ': $message';
     }
-    final String stderr = result?.stderr ?? '';
+    final String stderr = result?.stderr as String? ?? '';
     if (stderr.isNotEmpty) {
       output += ':\n$stderr';
     }
@@ -60,10 +60,9 @@ String getChannelName(Channel channel) {
     case Channel.stable:
       return 'stable';
   }
-  return null;
 }
 
-Channel fromChannelName(String name) {
+Channel fromChannelName(String? name) {
   switch (name) {
     case 'beta':
       return Channel.beta;
@@ -87,7 +86,6 @@ String getPublishedPlatform(PublishedPlatform platform) {
     case PublishedPlatform.windows:
       return 'windows';
   }
-  return null;
 }
 
 PublishedPlatform fromPublishedPlatform(String name) {
@@ -135,20 +133,20 @@ class ProcessRunner {
 
   /// Sets the default directory used when `workingDirectory` is not specified
   /// to [runProcess].
-  final Directory defaultWorkingDirectory;
+  final Directory? defaultWorkingDirectory;
 
   /// The environment to run processes with.
-  Map<String, String> environment;
+  late Map<String, String> environment;
 
   /// Run the command and arguments in `commandLine` as a sub-process from
   /// `workingDirectory` if set, or the [defaultWorkingDirectory] if not. Uses
   /// [Directory.current] if [defaultWorkingDirectory] is not set.
   ///
   /// Set `failOk` if [runProcess] should not throw an exception when the
-  /// command completes with a a non-zero exit code.
+  /// command completes with a non-zero exit code.
   Future<String> runProcess(
     List<String> commandLine, {
-    Directory workingDirectory,
+    Directory? workingDirectory,
     bool failOk = false,
   }) async {
     workingDirectory ??= defaultWorkingDirectory ?? Directory.current;
@@ -158,7 +156,7 @@ class ProcessRunner {
     final List<int> output = <int>[];
     final Completer<void> stdoutComplete = Completer<void>();
     final Completer<void> stderrComplete = Completer<void>();
-    Process process;
+    late Process process;
     Future<int> allComplete() async {
       await stderrComplete.future;
       await stdoutComplete.future;
@@ -221,12 +219,12 @@ class ArchiveUnpublisher {
     this.channels,
     this.platform, {
     this.confirmed = false,
-    ProcessManager processManager,
+    ProcessManager? processManager,
     bool subprocessOutput = true,
   })  : assert(revisionsBeingRemoved.length == 40),
         metadataGsPath = '$gsReleaseFolder/${getMetadataFilename(platform)}',
         _processRunner = ProcessRunner(
-          processManager: processManager,
+          processManager: processManager ?? const LocalProcessManager(),
           subprocessOutput: subprocessOutput,
         );
 
@@ -242,20 +240,20 @@ class ArchiveUnpublisher {
   /// Remove the archive from Google Storage.
   Future<void> unpublishArchive() async {
     final Map<String, dynamic> jsonData = await _loadMetadata();
-    final List<Map<String, String>> releases = jsonData['releases'].map<Map<String, String>>((dynamic entry) {
-      final Map<String, dynamic> mapEntry = entry;
+    final List<Map<String, String>> releases = (jsonData['releases'] as List<dynamic>).map<Map<String, String>>((dynamic entry) {
+      final Map<String, dynamic> mapEntry = entry as Map<String, dynamic>;
       return mapEntry.cast<String, String>();
     }).toList();
     final Map<Channel, Map<String, String>> paths = await _getArchivePaths(releases);
     releases.removeWhere((Map<String, String> value) => revisionsBeingRemoved.contains(value['hash']) && channels.contains(fromChannelName(value['channel'])));
     releases.sort((Map<String, String> a, Map<String, String> b) {
-      final DateTime aDate = DateTime.parse(a['release_date']);
-      final DateTime bDate = DateTime.parse(b['release_date']);
+      final DateTime aDate = DateTime.parse(a['release_date']!);
+      final DateTime bDate = DateTime.parse(b['release_date']!);
       return bDate.compareTo(aDate);
     });
     jsonData['releases'] = releases;
-    for (Channel channel in channels) {
-      if (!revisionsBeingRemoved.contains(jsonData['current_release'][getChannelName(channel)])) {
+    for (final Channel channel in channels) {
+      if (!revisionsBeingRemoved.contains((jsonData['current_release'] as Map<String, dynamic>)[getChannelName(channel)])) {
         // Don't replace the current release if it's not one of the revisions we're removing.
         continue;
       }
@@ -263,7 +261,7 @@ class ArchiveUnpublisher {
       if (replacementRelease == null) {
         throw UnpublishException('Unable to find previous release for channel ${getChannelName(channel)}.');
       }
-      jsonData['current_release'][getChannelName(channel)] = replacementRelease['hash'];
+      (jsonData['current_release'] as Map<String, dynamic>)[getChannelName(channel)] = replacementRelease['hash'];
       print(
         '${confirmed ? 'Reverting' : 'Would revert'} current ${getChannelName(channel)} '
         '${getPublishedPlatform(platform)} release to ${replacementRelease['hash']} (version ${replacementRelease['version']}).'
@@ -276,13 +274,13 @@ class ArchiveUnpublisher {
   Future<Map<Channel, Map<String, String>>> _getArchivePaths(List<Map<String, String>> releases) async {
     final Set<String> hashes = <String>{};
     final Map<Channel, Map<String, String>> paths = <Channel, Map<String, String>>{};
-    for (Map<String, String> revision in releases) {
-      final String hash = revision['hash'];
+    for (final Map<String, String> revision in releases) {
+      final String hash = revision['hash']!;
       final Channel channel = fromChannelName(revision['channel']);
       hashes.add(hash);
       if (revisionsBeingRemoved.contains(hash) && channels.contains(channel)) {
         paths[channel] ??= <String, String>{};
-        paths[channel][hash] = revision['archive'];
+        paths[channel]![hash] = revision['archive']!;
       }
     }
     final Set<String> missingRevisions = revisionsBeingRemoved.difference(hashes.intersection(revisionsBeingRemoved));
@@ -306,7 +304,7 @@ class ArchiveUnpublisher {
 
     Map<String, dynamic> jsonData;
     try {
-      jsonData = json.decode(currentMetadata);
+      jsonData = json.decode(currentMetadata) as Map<String, dynamic>;
     } on FormatException catch (e) {
       throw UnpublishException('Unable to parse JSON metadata received from cloud: $e');
     }
@@ -330,7 +328,7 @@ class ArchiveUnpublisher {
 
   Future<String> _runGsUtil(
     List<String> args, {
-    Directory workingDirectory,
+    Directory? workingDirectory,
     bool failOk = false,
     bool confirm = false,
   }) async {
@@ -350,9 +348,9 @@ class ArchiveUnpublisher {
   Future<void> _cloudRemoveArchive(Map<Channel, Map<String, String>> paths) async {
     final List<String> files = <String>[];
     print('${confirmed ? 'Removing' : 'Would remove'} the following release archives:');
-    for (Channel channel in paths.keys) {
-      final Map<String, String> hashes = paths[channel];
-      for (String hash in hashes.keys) {
+    for (final Channel channel in paths.keys) {
+      final Map<String, String> hashes = paths[channel]!;
+      for (final String hash in hashes.keys) {
         final String file = '$gsReleaseFolder/${hashes[hash]}';
         files.add(file);
         print('  $file');
@@ -367,7 +365,7 @@ class ArchiveUnpublisher {
     // We often don't have permission to overwrite, but
     // we have permission to remove, so that's what we do first.
     await _runGsUtil(<String>['rm', dest], failOk: true, confirm: confirmed);
-    String mimeType;
+    String? mimeType;
     if (dest.endsWith('.tar.xz')) {
       mimeType = 'application/x-gtar';
     }
@@ -383,7 +381,7 @@ class ArchiveUnpublisher {
       if (mimeType != null) ...<String>['-h', 'Content-Type:$mimeType'],
       ...<String>['cp', src, dest],
     ];
-    return await _runGsUtil(args, confirm: confirmed);
+    return _runGsUtil(args, confirm: confirmed);
   }
 }
 
@@ -391,7 +389,7 @@ void _printBanner(String message) {
   final String banner = '*** $message ***';
   print('\n');
   print('*' * banner.length);
-  print('$banner');
+  print(banner);
   print('*' * banner.length);
   print('\n');
 }
@@ -403,7 +401,6 @@ Future<void> main(List<String> rawArguments) async {
   final ArgParser argParser = ArgParser();
   argParser.addOption(
     'temp_dir',
-    defaultsTo: null,
     help: 'A location where temporary files may be written. Defaults to a '
         'directory in the system temp folder. If a temp_dir is not '
         'specified, then by default a generated temporary directory will be '
@@ -433,7 +430,6 @@ Future<void> main(List<String> rawArguments) async {
   );
   argParser.addFlag(
     'confirm',
-    defaultsTo: false,
     help: 'If set, will actually remove the archive from Google Cloud Storage '
         'upon successful execution of this script. Published archives will be '
         'removed from this directory: $baseUrl$releaseFolder.  This option '
@@ -442,14 +438,13 @@ Future<void> main(List<String> rawArguments) async {
   );
   argParser.addFlag(
     'help',
-    defaultsTo: false,
     negatable: false,
     help: 'Print help for this command.',
   );
 
   final ArgResults parsedArguments = argParser.parse(rawArguments);
 
-  if (parsedArguments['help']) {
+  if (parsedArguments['help'] as bool) {
     print(argParser.usage);
     exit(0);
   }
@@ -460,11 +455,11 @@ Future<void> main(List<String> rawArguments) async {
     exit(exitCode);
   }
 
-  final List<String> revisions = parsedArguments['revision'];
+  final List<String> revisions = parsedArguments['revision'] as List<String>;
   if (revisions.isEmpty) {
     errorExit('Invalid argument: at least one --revision must be specified.');
   }
-  for (String revision in revisions) {
+  for (final String revision in revisions) {
     if (revision.length != 40) {
       errorExit('Invalid argument: --revision "$revision" must be the entire hash, not just a prefix.');
     }
@@ -473,37 +468,40 @@ Future<void> main(List<String> rawArguments) async {
     }
   }
 
+  final String tempDirArg = parsedArguments['temp_dir'] as String;
   Directory tempDir;
   bool removeTempDir = false;
-  if (parsedArguments['temp_dir'] == null || parsedArguments['temp_dir'].isEmpty) {
+  if (tempDirArg == null || tempDirArg.isEmpty) {
     tempDir = Directory.systemTemp.createTempSync('flutter_package.');
     removeTempDir = true;
   } else {
-    tempDir = Directory(parsedArguments['temp_dir']);
+    tempDir = Directory(tempDirArg);
     if (!tempDir.existsSync()) {
-      errorExit("Temporary directory ${parsedArguments['temp_dir']} doesn't exist.");
+      errorExit("Temporary directory $tempDirArg doesn't exist.");
     }
   }
 
-  if (!parsedArguments['confirm']) {
+  if (!(parsedArguments['confirm'] as bool)) {
     _printBanner('This will be just a dry run.  To actually perform the changes below, re-run with --confirm argument.');
   }
 
-  final List<String> channelOptions = parsedArguments['channel'].isNotEmpty ? parsedArguments['channel'] : allowedChannelValues;
+  final List<String> channelArg = parsedArguments['channel'] as List<String>;
+  final List<String> channelOptions = channelArg.isNotEmpty ? channelArg : allowedChannelValues;
   final Set<Channel> channels = channelOptions.map<Channel>((String value) => fromChannelName(value)).toSet();
-  final List<String> platformOptions = parsedArguments['platform'].isNotEmpty ? parsedArguments['platform'] : allowedPlatformNames;
+  final List<String> platformArg = parsedArguments['platform'] as List<String>;
+  final List<String> platformOptions = platformArg.isNotEmpty ? platformArg : allowedPlatformNames;
   final List<PublishedPlatform> platforms = platformOptions.map<PublishedPlatform>((String value) => fromPublishedPlatform(value)).toList();
   int exitCode = 0;
-  String message;
-  String stack;
+  late String message;
+  late String stack;
   try {
-    for (PublishedPlatform platform in platforms) {
+    for (final PublishedPlatform platform in platforms) {
       final ArchiveUnpublisher publisher = ArchiveUnpublisher(
         tempDir,
         revisions.toSet(),
         channels,
         platform,
-        confirmed: parsedArguments['confirm'],
+        confirmed: parsedArguments['confirm'] as bool,
       );
       await publisher.unpublishArchive();
     }
@@ -522,7 +520,7 @@ Future<void> main(List<String> rawArguments) async {
     if (exitCode != 0) {
       errorExit('$message\n$stack', exitCode: exitCode);
     }
-    if (!parsedArguments['confirm']) {
+    if (!(parsedArguments['confirm'] as bool)) {
       _printBanner('This was just a dry run.  To actually perform the above changes, re-run with --confirm argument.');
     }
     exit(0);

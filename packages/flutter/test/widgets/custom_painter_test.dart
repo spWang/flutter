@@ -1,13 +1,12 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:ui';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'semantics_tester.dart';
 
@@ -33,9 +32,7 @@ void _defineTests() {
     ));
 
     expect(semanticsTester, hasSemantics(
-      TestSemantics.root(
-        children: const <TestSemantics>[],
-      ),
+      TestSemantics.root(),
     ));
 
     semanticsTester.dispose();
@@ -126,10 +123,6 @@ void _defineTests() {
           ),
         ),
       ),
-      child: Semantics(
-        container: true,
-        child: const Text('Hello', textDirection: TextDirection.ltr),
-      ),
       foregroundPainter: _PainterWithSemantics(
         semantics: const CustomPainterSemantics(
           rect: Rect.fromLTRB(1.0, 1.0, 2.0, 2.0),
@@ -138,6 +131,10 @@ void _defineTests() {
             textDirection: TextDirection.rtl,
           ),
         ),
+      ),
+      child: Semantics(
+        container: true,
+        child: const Text('Hello', textDirection: TextDirection.ltr),
       ),
     ));
 
@@ -344,6 +341,7 @@ void _defineTests() {
             onMoveCursorForwardByWord: (bool _) => performedActions.add(SemanticsAction.moveCursorForwardByWord),
             onMoveCursorBackwardByWord: (bool _) => performedActions.add(SemanticsAction.moveCursorBackwardByWord),
             onSetSelection: (TextSelection _) => performedActions.add(SemanticsAction.setSelection),
+            onSetText: (String text) => performedActions.add(SemanticsAction.setText),
             onDidGainAccessibilityFocus: () => performedActions.add(SemanticsAction.didGainAccessibilityFocus),
             onDidLoseAccessibilityFocus: () => performedActions.add(SemanticsAction.didLoseAccessibilityFocus),
           ),
@@ -372,9 +370,9 @@ void _defineTests() {
     expect(semantics, hasSemantics(expectedSemantics, ignoreRect: true, ignoreTransform: true));
 
     // Do the actions work?
-    final SemanticsOwner semanticsOwner = tester.binding.pipelineOwner.semanticsOwner;
+    final SemanticsOwner semanticsOwner = tester.binding.pipelineOwner.semanticsOwner!;
     int expectedLength = 1;
-    for (SemanticsAction action in allActions) {
+    for (final SemanticsAction action in allActions) {
       switch (action) {
         case SemanticsAction.moveCursorBackwardByCharacter:
         case SemanticsAction.moveCursorForwardByCharacter:
@@ -388,8 +386,27 @@ void _defineTests() {
             'extent': 5,
           });
           break;
-        default:
+        case SemanticsAction.setText:
+          semanticsOwner.performAction(expectedId, action, 'text');
+          break;
+        case SemanticsAction.copy:
+        case SemanticsAction.customAction:
+        case SemanticsAction.cut:
+        case SemanticsAction.decrease:
+        case SemanticsAction.didGainAccessibilityFocus:
+        case SemanticsAction.didLoseAccessibilityFocus:
+        case SemanticsAction.dismiss:
+        case SemanticsAction.increase:
+        case SemanticsAction.longPress:
+        case SemanticsAction.paste:
+        case SemanticsAction.scrollDown:
+        case SemanticsAction.scrollLeft:
+        case SemanticsAction.scrollRight:
+        case SemanticsAction.scrollUp:
+        case SemanticsAction.showOnScreen:
+        case SemanticsAction.tap:
           semanticsOwner.performAction(expectedId, action);
+          break;
       }
       expect(performedActions.length, expectedLength);
       expect(performedActions.last, action);
@@ -413,6 +430,8 @@ void _defineTests() {
             selected: true,
             hidden: true,
             button: true,
+            slider: true,
+            keyboardKey: true,
             link: true,
             textField: true,
             readOnly: true,
@@ -463,6 +482,8 @@ void _defineTests() {
             selected: true,
             hidden: true,
             button: true,
+            slider: true,
+            keyboardKey: true,
             link: true,
             textField: true,
             readOnly: true,
@@ -500,7 +521,7 @@ void _defineTests() {
     );
     expect(semantics, hasSemantics(expectedSemantics, ignoreRect: true, ignoreTransform: true));
     semantics.dispose();
-  }, skip: isBrowser);
+  });
 
   group('diffing', () {
     testWidgets('complains about duplicate keys', (WidgetTester tester) async {
@@ -515,35 +536,35 @@ void _defineTests() {
       semanticsTester.dispose();
     });
 
-    testDiff('adds one item to an empty list', (_DiffTester tester) async {
+    _testDiff('adds one item to an empty list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>[],
         to: <String>['a'],
       );
     });
 
-    testDiff('removes the last item from the list', (_DiffTester tester) async {
+    _testDiff('removes the last item from the list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>['a'],
         to: <String>[],
       );
     });
 
-    testDiff('appends one item at the end of a non-empty list', (_DiffTester tester) async {
+    _testDiff('appends one item at the end of a non-empty list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>['a'],
         to: <String>['a', 'b'],
       );
     });
 
-    testDiff('prepends one item at the beginning of a non-empty list', (_DiffTester tester) async {
+    _testDiff('prepends one item at the beginning of a non-empty list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>['b'],
         to: <String>['a', 'b'],
       );
     });
 
-    testDiff('inserts one item in the middle of a list', (_DiffTester tester) async {
+    _testDiff('inserts one item in the middle of a list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>[
           'a-k',
@@ -557,7 +578,7 @@ void _defineTests() {
       );
     });
 
-    testDiff('removes one item from the middle of a list', (_DiffTester tester) async {
+    _testDiff('removes one item from the middle of a list', (_DiffTester tester) async {
       await tester.diff(
         from: <String>[
           'a-k',
@@ -571,7 +592,7 @@ void _defineTests() {
       );
     });
 
-    testDiff('swaps two items', (_DiffTester tester) async {
+    _testDiff('swaps two items', (_DiffTester tester) async {
       await tester.diff(
         from: <String>[
           'a-k',
@@ -584,7 +605,7 @@ void _defineTests() {
       );
     });
 
-    testDiff('finds and moved one keyed item', (_DiffTester tester) async {
+    _testDiff('finds and moved one keyed item', (_DiffTester tester) async {
       await tester.diff(
         from: <String>[
           'a-k',
@@ -689,7 +710,7 @@ void _defineTests() {
   });
 }
 
-void testDiff(String description, Future<void> Function(_DiffTester tester) testFunction) {
+void _testDiff(String description, Future<void> Function(_DiffTester tester) testFunction) {
   testWidgets(description, (WidgetTester tester) async {
     await testFunction(_DiffTester(tester));
   });
@@ -707,7 +728,7 @@ class _DiffTester {
   ///
   /// - checks that initial and final configurations are in the desired states.
   /// - checks that keyed nodes have stable IDs.
-  Future<void> diff({ List<String> from, List<String> to }) async {
+  Future<void> diff({ required List<String> from, required List<String> to }) async {
     final SemanticsTester semanticsTester = SemanticsTester(tester);
 
     TestSemantics createExpectations(List<String> labels) {
@@ -716,7 +737,7 @@ class _DiffTester {
           TestSemantics.rootChild(
             rect: TestSemantics.fullScreen,
             children: <TestSemantics>[
-              for (String label in labels)
+              for (final String label in labels)
                 TestSemantics(
                   rect: const Rect.fromLTRB(1.0, 1.0, 2.0, 2.0),
                   label: label,
@@ -732,12 +753,12 @@ class _DiffTester {
     ));
     expect(semanticsTester, hasSemantics(createExpectations(from), ignoreId: true));
 
-    SemanticsNode root = RendererBinding.instance?.renderView?.debugSemantics;
+    SemanticsNode root = RendererBinding.instance.renderView.debugSemantics!;
     final Map<Key, int> idAssignments = <Key, int>{};
     root.visitChildren((SemanticsNode firstChild) {
       firstChild.visitChildren((SemanticsNode node) {
         if (node.key != null) {
-          idAssignments[node.key] = node.id;
+          idAssignments[node.key!] = node.id;
         }
         return true;
       });
@@ -750,7 +771,7 @@ class _DiffTester {
     await tester.pumpAndSettle();
     expect(semanticsTester, hasSemantics(createExpectations(to), ignoreId: true));
 
-    root = RendererBinding.instance?.renderView?.debugSemantics;
+    root = RendererBinding.instance.renderView.debugSemantics!;
     root.visitChildren((SemanticsNode firstChild) {
       firstChild.visitChildren((SemanticsNode node) {
         if (node.key != null && idAssignments[node.key] != null) {
@@ -783,8 +804,8 @@ class _SemanticsDiffTest extends CustomPainter {
 
   List<CustomPainterSemantics> buildSemantics(Size size) {
     final List<CustomPainterSemantics> semantics = <CustomPainterSemantics>[];
-    for (String label in data) {
-      Key key;
+    for (final String label in data) {
+      Key? key;
       if (label.endsWith('-k')) {
         key = ValueKey<String>(label);
       }
@@ -807,7 +828,7 @@ class _SemanticsDiffTest extends CustomPainter {
 }
 
 class _PainterWithSemantics extends CustomPainter {
-  _PainterWithSemantics({ this.semantics });
+  _PainterWithSemantics({ required this.semantics });
 
   final CustomPainterSemantics semantics;
 

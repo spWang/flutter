@@ -1,54 +1,24 @@
-{{#includeTargetPlatformWorkaround}}
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-{{/includeTargetPlatformWorkaround}}
 import 'package:flutter/material.dart';
-{{#withDriverTest}}
-import 'package:flutter_driver/driver_extension.dart';
-{{/withDriverTest}}
-{{#withPluginHook}}
+{{#withPlatformChannelPluginHook}}
 import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:{{pluginProjectName}}/{{pluginProjectName}}.dart';
-{{/withPluginHook}}
-{{#includeTargetPlatformWorkaround}}
+{{/withPlatformChannelPluginHook}}
+{{#withFfiPluginHook}}
+import 'dart:async';
 
-// Sets a platform override for desktop to avoid exceptions. See
-// https://flutter.dev/desktop#target-platform-override for more info.
-void _enablePlatformOverrideForDesktop() {
-  if (!kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
-    debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
-  }
-}
-{{/includeTargetPlatformWorkaround}}
+import 'package:{{pluginProjectName}}/{{pluginProjectName}}.dart' as {{pluginProjectName}};
+{{/withFfiPluginHook}}
 
-{{^withDriverTest}}
-{{^includeTargetPlatformWorkaround}}
-void main() => runApp(MyApp());
-{{/includeTargetPlatformWorkaround}}
-{{#includeTargetPlatformWorkaround}}
 void main() {
-  _enablePlatformOverrideForDesktop();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
-{{/includeTargetPlatformWorkaround}}
-{{/withDriverTest}}
-{{#withDriverTest}}
-void main() {
-{{#includeTargetPlatformWorkaround}}
-  _enablePlatformOverrideForDesktop();
-{{/includeTargetPlatformWorkaround}}
-  // Enable integration testing with the Flutter Driver extension.
-  // See https://flutter.dev/testing/ for more info.
-  enableFlutterDriverExtension();
-  runApp(MyApp());
-}
-{{/withDriverTest}}
 
 {{^withPluginHook}}
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -66,13 +36,13 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -86,7 +56,7 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -137,12 +107,12 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
+            const Text(
               'You have pushed the button this many times:',
             ),
             Text(
               '$_counter',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme.of(context).textTheme.headline4,
             ),
           ],
         ),
@@ -150,16 +120,18 @@ class _MyHomePageState extends State<MyHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
 {{/withPluginHook}}
-{{#withPluginHook}}
+{{#withPlatformChannelPluginHook}}
 class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
@@ -175,8 +147,10 @@ class _MyAppState extends State<MyApp> {
   Future<void> initPlatformState() async {
     String platformVersion;
     // Platform messages may fail, so we use a try/catch PlatformException.
+    // We also handle the message potentially returning null.
     try {
-      platformVersion = await {{pluginDartClass}}.platformVersion;
+      platformVersion =
+          await {{pluginDartClass}}.platformVersion ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -205,4 +179,71 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-{{/withPluginHook}}
+{{/withPlatformChannelPluginHook}}
+{{#withFfiPluginHook}}
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late int sumResult;
+  late Future<int> sumAsyncResult;
+
+  @override
+  void initState() {
+    super.initState();
+    sumResult = {{pluginProjectName}}.sum(1, 2);
+    sumAsyncResult = {{pluginProjectName}}.sumAsync(3, 4);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const textStyle = TextStyle(fontSize: 25);
+    const spacerSmall = SizedBox(height: 10);
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Native Packages'),
+        ),
+        body: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              children: [
+                const Text(
+                  'This calls a native function through FFI that is shipped as source in the package. '
+                  'The native code is built as part of the Flutter Runner build.',
+                  style: textStyle,
+                  textAlign: TextAlign.center,
+                ),
+                spacerSmall,
+                Text(
+                  'sum(1, 2) = $sumResult',
+                  style: textStyle,
+                  textAlign: TextAlign.center,
+                ),
+                spacerSmall,
+                FutureBuilder<int>(
+                  future: sumAsyncResult,
+                  builder: (BuildContext context, AsyncSnapshot<int> value) {
+                    final displayValue =
+                        (value.hasData) ? value.data : 'loading';
+                    return Text(
+                      'await sumAsync(3, 4) = $displayValue',
+                      style: textStyle,
+                      textAlign: TextAlign.center,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+{{/withFfiPluginHook}}

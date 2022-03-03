@@ -1,10 +1,9 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'semantics_tester.dart';
@@ -18,7 +17,6 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Semantics(
           container: true,
-          explicitChildNodes: false,
           child: Column(
             children: const <Widget>[
               Text('Michael Goderbauer'),
@@ -140,7 +138,6 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Semantics(
           container: true,
-          explicitChildNodes: false,
           child: Semantics(
             label: 'Signed in as',
             child: Column(
@@ -183,13 +180,12 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Semantics(
           container: true,
-          explicitChildNodes: false,
           child: Column(
             children: <Widget>[
               Semantics(
                 label: 'node 1',
                 selected: true,
-                child: Container(
+                child: const SizedBox(
                   width: 10.0,
                   height: 10.0,
                 ),
@@ -197,7 +193,7 @@ void main() {
               Semantics(
                 label: 'node 2',
                 selected: true,
-                child: Container(
+                child: const SizedBox(
                   width: 10.0,
                   height: 10.0,
                 ),
@@ -205,7 +201,7 @@ void main() {
               Semantics(
                 label: 'node 3',
                 selected: true,
-                child: Container(
+                child: const SizedBox(
                   width: 10.0,
                   height: 10.0,
                 ),

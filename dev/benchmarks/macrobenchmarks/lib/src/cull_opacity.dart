@@ -1,24 +1,30 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
 
 class CullOpacityPage extends StatefulWidget {
+  const CullOpacityPage({Key? key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _CullOpacityPageState();
 }
 
 class _CullOpacityPageState extends State<CullOpacityPage> with SingleTickerProviderStateMixin {
-  Animation<double> _offsetY;
-  AnimationController _controller;
+  late Animation<double> _offsetY;
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    _offsetY = Tween<double>(begin: 0, end: -1000.0).animate(_controller)..addListener((){
+    // Animations are typically implemented using the AnimatedBuilder widget.
+    // This code uses a manual listener for historical reasons and will remain
+    // in order to preserve compatibility with the history of measurements for
+    // this benchmark.
+    _offsetY = Tween<double>(begin: 0, end: -1000.0).animate(_controller)..addListener(() {
       setState(() {});
     });
     _controller.repeat();

@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,17 +9,17 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../framework/framework.dart';
+import '../framework/task_result.dart';
 import '../framework/utils.dart';
 
 final Directory _editedFlutterGalleryDir = dir(path.join(Directory.systemTemp.path, 'edited_flutter_gallery'));
-final Directory flutterGalleryDir = dir(path.join(flutterDirectory.path, 'examples/flutter_gallery'));
+final Directory flutterGalleryDir = dir(path.join(flutterDirectory.path, 'dev/integration_tests/flutter_gallery'));
 
 const String kInitialStartupTime = 'InitialStartupTime';
 const String kFirstRestartTime = 'FistRestartTime';
 const String kFirstRecompileTime  = 'FirstRecompileTime';
 const String kSecondStartupTime = 'SecondStartupTime';
 const String kSecondRestartTime = 'SecondRestartTime';
-
 
 abstract class WebDevice {
   static const String chrome = 'chrome';
@@ -45,21 +45,11 @@ TaskFunction createWebDevModeTest(String webDevice, bool enableIncrementalCompil
           final Process packagesGet = await startProcess(
               path.join(flutterDirectory.path, 'bin', 'flutter'),
               <String>['packages', 'get'],
-              environment: <String, String>{
-                'FLUTTER_WEB': 'true',
-                if (enableIncrementalCompiler)
-                  'WEB_INCREMENTAL_COMPILER': 'true',
-              },
           );
           await packagesGet.exitCode;
           final Process process = await startProcess(
               path.join(flutterDirectory.path, 'bin', 'flutter'),
               flutterCommandArgs('run', options),
-              environment: <String, String>{
-                'FLUTTER_WEB': 'true',
-                if (enableIncrementalCompiler)
-                  'WEB_INCREMENTAL_COMPILER': 'true',
-              },
           );
 
           final Completer<void> stdoutDone = Completer<void>();
@@ -70,7 +60,8 @@ TaskFunction createWebDevModeTest(String webDevice, bool enableIncrementalCompil
               .transform<String>(utf8.decoder)
               .transform<String>(const LineSplitter())
               .listen((String line) {
-            // TODO(jonahwilliams): non-dwds builds do not know when the browser is loaded.
+            // non-dwds builds do not know when the browser is loaded so keep trying
+            // until this succeeds.
             if (line.contains('Ignoring terminal input')) {
               Future<void>.delayed(const Duration(seconds: 1)).then((void _) {
                 process.stdin.write(restarted ? 'q' : 'r');
@@ -140,11 +131,6 @@ TaskFunction createWebDevModeTest(String webDevice, bool enableIncrementalCompil
           final Process process = await startProcess(
               path.join(flutterDirectory.path, 'bin', 'flutter'),
               flutterCommandArgs('run', options),
-              environment: <String, String>{
-                'FLUTTER_WEB': 'true',
-                if (enableIncrementalCompiler)
-                  'WEB_INCREMENTAL_COMPILER': 'true',
-              },
           );
           final Completer<void> stdoutDone = Completer<void>();
           final Completer<void> stderrDone = Completer<void>();
@@ -153,7 +139,8 @@ TaskFunction createWebDevModeTest(String webDevice, bool enableIncrementalCompil
               .transform<String>(utf8.decoder)
               .transform<String>(const LineSplitter())
               .listen((String line) {
-            // TODO(jonahwilliams): non-dwds builds do not know when the browser is loaded.
+            // non-dwds builds do not know when the browser is loaded so keep trying
+            // until this succeeds.
             if (line.contains('Ignoring terminal input')) {
               Future<void>.delayed(const Duration(seconds: 1)).then((void _) {
                 process.stdin.write(restarted ? 'q' : 'r');

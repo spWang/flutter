@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,8 +6,8 @@ import 'dart:math' as math;
 import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'basic.dart';
 import 'binding.dart';
@@ -25,8 +25,8 @@ class SemanticsDebugger extends StatefulWidget {
   ///
   /// [labelStyle] dictates the [TextStyle] used for the semantics labels.
   const SemanticsDebugger({
-    Key key,
-    @required this.child,
+    Key? key,
+    required this.child,
     this.labelStyle = const TextStyle(
       color: Color(0xFF000000),
       fontSize: 10.0,
@@ -38,18 +38,18 @@ class SemanticsDebugger extends StatefulWidget {
 
   /// The widget below this widget in the tree.
   ///
-  /// {@macro flutter.widgets.child}
+  /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
   /// The [TextStyle] to use when rendering semantics labels.
   final TextStyle labelStyle;
 
   @override
-  _SemanticsDebuggerState createState() => _SemanticsDebuggerState();
+  State<SemanticsDebugger> createState() => _SemanticsDebuggerState();
 }
 
 class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindingObserver {
-  _SemanticsClient _client;
+  late _SemanticsClient _client;
 
   @override
   void initState() {
@@ -83,11 +83,7 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
     SchedulerBinding.instance.addPostFrameCallback((Duration timeStamp) {
       // Semantic information are only available at the end of a frame and our
       // only chance to paint them on the screen is the next frame. To achieve
-      // this, we call setState() in a post-frame callback. THIS PATTERN SHOULD
-      // NOT BE COPIED. Calling setState() in a post-frame callback is a bad
-      // idea as it will not schedule a frame and your app may be lagging behind
-      // by one frame. We manually call scheduleFrame() to force a frame and
-      // ensure that the semantic information are always painted on the screen.
+      // this, we call setState() in a post-frame callback.
       if (mounted) {
         // If we got disposed this frame, we will still get an update,
         // because the inactive list is flushed after the semantics updates
@@ -95,12 +91,11 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
         setState(() {
           // The generation of the _SemanticsDebuggerListener has changed.
         });
-        SchedulerBinding.instance.scheduleFrame();
       }
     });
   }
 
-  Offset _lastPointerDownLocation;
+  Offset? _lastPointerDownLocation;
   void _handlePointerDown(PointerDownEvent event) {
     setState(() {
       _lastPointerDownLocation = event.position * WidgetsBinding.instance.window.devicePixelRatio;
@@ -111,7 +106,7 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
 
   void _handleTap() {
     assert(_lastPointerDownLocation != null);
-    _performAction(_lastPointerDownLocation, SemanticsAction.tap);
+    _performAction(_lastPointerDownLocation!, SemanticsAction.tap);
     setState(() {
       _lastPointerDownLocation = null;
     });
@@ -119,7 +114,7 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
 
   void _handleLongPress() {
     assert(_lastPointerDownLocation != null);
-    _performAction(_lastPointerDownLocation, SemanticsAction.longPress);
+    _performAction(_lastPointerDownLocation!, SemanticsAction.longPress);
     setState(() {
       _lastPointerDownLocation = null;
     });
@@ -132,17 +127,17 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
       return;
     if (vx.abs() > vy.abs()) {
       if (vx.sign < 0) {
-        _performAction(_lastPointerDownLocation, SemanticsAction.decrease);
-        _performAction(_lastPointerDownLocation, SemanticsAction.scrollLeft);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.decrease);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.scrollLeft);
       } else {
-        _performAction(_lastPointerDownLocation, SemanticsAction.increase);
-        _performAction(_lastPointerDownLocation, SemanticsAction.scrollRight);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.increase);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.scrollRight);
       }
     } else {
       if (vy.sign < 0)
-        _performAction(_lastPointerDownLocation, SemanticsAction.scrollUp);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.scrollUp);
       else
-        _performAction(_lastPointerDownLocation, SemanticsAction.scrollDown);
+        _performAction(_lastPointerDownLocation!, SemanticsAction.scrollDown);
     }
     setState(() {
       _lastPointerDownLocation = null;
@@ -189,15 +184,15 @@ class _SemanticsDebuggerState extends State<SemanticsDebugger> with WidgetsBindi
 class _SemanticsClient extends ChangeNotifier {
   _SemanticsClient(PipelineOwner pipelineOwner) {
     _semanticsHandle = pipelineOwner.ensureSemantics(
-      listener: _didUpdateSemantics
+      listener: _didUpdateSemantics,
     );
   }
 
-  SemanticsHandle _semanticsHandle;
+  SemanticsHandle? _semanticsHandle;
 
   @override
   void dispose() {
-    _semanticsHandle.dispose();
+    _semanticsHandle!.dispose();
     _semanticsHandle = null;
     super.dispose();
   }
@@ -215,17 +210,17 @@ class _SemanticsDebuggerPainter extends CustomPainter {
 
   final PipelineOwner owner;
   final int generation;
-  final Offset pointerPosition; // in physical pixels
+  final Offset? pointerPosition; // in physical pixels
   final double devicePixelRatio;
   final TextStyle labelStyle;
 
-  SemanticsNode get _rootSemanticsNode {
+  SemanticsNode? get _rootSemanticsNode {
     return owner.semanticsOwner?.rootSemanticsNode;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final SemanticsNode rootNode = _rootSemanticsNode;
+    final SemanticsNode? rootNode = _rootSemanticsNode;
     canvas.save();
     canvas.scale(1.0 / devicePixelRatio, 1.0 / devicePixelRatio);
     if (rootNode != null)
@@ -233,7 +228,7 @@ class _SemanticsDebuggerPainter extends CustomPainter {
     if (pointerPosition != null) {
       final Paint paint = Paint();
       paint.color = const Color(0x7F0090FF);
-      canvas.drawCircle(pointerPosition, 10.0 * devicePixelRatio, paint);
+      canvas.drawCircle(pointerPosition!, 10.0 * devicePixelRatio, paint);
     }
     canvas.restore();
   }
@@ -285,22 +280,22 @@ class _SemanticsDebuggerPainter extends CustomPainter {
     if (isAdjustable)
       annotations.add('adjustable');
 
-    assert(data.label != null);
-    String message;
-    if (data.label.isEmpty) {
+    assert(data.attributedLabel != null);
+    final String message;
+    if (data.attributedLabel.string.isEmpty) {
       message = annotations.join('; ');
     } else {
-      String label;
+      final String label;
       if (data.textDirection == null) {
-        label = '${Unicode.FSI}${data.label}${Unicode.PDI}';
+        label = '${Unicode.FSI}${data.attributedLabel.string}${Unicode.PDI}';
         annotations.insert(0, 'MISSING TEXT DIRECTION');
       } else {
-        switch (data.textDirection) {
+        switch (data.textDirection!) {
           case TextDirection.rtl:
-            label = '${Unicode.RLI}${data.label}${Unicode.PDF}';
+            label = '${Unicode.RLI}${data.attributedLabel.string}${Unicode.PDF}';
             break;
           case TextDirection.ltr:
-            label = data.label;
+            label = data.attributedLabel.string;
             break;
         }
       }
@@ -348,7 +343,7 @@ class _SemanticsDebuggerPainter extends CustomPainter {
   void _paint(Canvas canvas, SemanticsNode node, int rank) {
     canvas.save();
     if (node.transform != null)
-      canvas.transform(node.transform.storage);
+      canvas.transform(node.transform!.storage);
     final Rect rect = node.rect;
     if (!rect.isEmpty) {
       final Color lineColor = Color(0xFF000000 + math.Random(node.id).nextInt(0xFFFFFF));

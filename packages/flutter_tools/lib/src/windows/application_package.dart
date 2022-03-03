@@ -1,18 +1,17 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:meta/meta.dart';
-
 import '../application_package.dart';
-import '../base/common.dart';
 import '../base/file_system.dart';
 import '../base/utils.dart';
 import '../build_info.dart';
-import '../project.dart';
+import '../cmake.dart';
+import '../cmake_project.dart';
+import '../globals.dart' as globals;
 
 abstract class WindowsApp extends ApplicationPackage {
-  WindowsApp({@required String projectBundleId}) : super(id: projectBundleId);
+  WindowsApp({required String projectBundleId}) : super(id: projectBundleId);
 
   /// Creates a new [WindowsApp] from a windows sub project.
   factory WindowsApp.fromWindowsProject(WindowsProject project) {
@@ -38,7 +37,7 @@ abstract class WindowsApp extends ApplicationPackage {
 
 class PrebuiltWindowsApp extends WindowsApp {
   PrebuiltWindowsApp({
-    @required String executable,
+    required String executable,
   }) : _executable = executable,
        super(projectBundleId: executable);
 
@@ -53,25 +52,33 @@ class PrebuiltWindowsApp extends WindowsApp {
 
 class BuildableWindowsApp extends WindowsApp {
   BuildableWindowsApp({
-    @required this.project,
-  }) : super(projectBundleId: project.project.manifest.appName);
+    required this.project,
+  }) : super(projectBundleId: project.parent.manifest.appName);
 
   final WindowsProject project;
 
   @override
   String executable(BuildMode buildMode) {
-    final File exeNameFile = project.nameFile;
-    if (!exeNameFile.existsSync()) {
-      throwToolExit('Failed to find Windows executable name');
-    }
-    return fs.path.join(
+    final String? binaryName = getCmakeExecutableName(project);
+    return globals.fs.path.join(
         getWindowsBuildDirectory(),
-        'x64',
-        toTitleCase(getNameForBuildMode(buildMode)),
-        'Runner',
-        exeNameFile.readAsStringSync().trim());
+        'runner',
+        sentenceCase(getNameForBuildMode(buildMode)),
+        '$binaryName.exe',
+    );
   }
 
   @override
-  String get name => project.project.manifest.appName;
+  String get name => project.parent.manifest.appName;
+}
+
+class BuildableUwpApp extends ApplicationPackage {
+  BuildableUwpApp({required this.project}) : super(id: project.packageGuid ?? 'com.example.placeholder');
+
+  final WindowsUwpProject project;
+
+  String? get projectVersion => project.packageVersion;
+
+  @override
+  String? get name => getCmakeExecutableName(project);
 }

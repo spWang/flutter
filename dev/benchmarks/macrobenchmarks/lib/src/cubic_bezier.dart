@@ -1,15 +1,15 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'dart:math';
 
-import 'package:flutter/widgets.dart';
-import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 
 // Based on https://github.com/eseidelGoogle/bezier_perf/blob/master/lib/main.dart
 class CubicBezierPage extends StatelessWidget {
+  const CubicBezierPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -24,7 +24,7 @@ class CubicBezierPage extends StatelessWidget {
 }
 
 class Bezier extends StatelessWidget {
-  const Bezier(this.color, this.scale, {this.blur = 0.0, this.delay = 0.0});
+  const Bezier(this.color, this.scale, {Key? key, this.blur = 0.0, this.delay = 0.0}) : super(key: key);
 
   final Color color;
   final double scale;
@@ -79,7 +79,7 @@ class Bezier extends StatelessWidget {
         BezierPainter(Colors.grey, 0.0, _getLogoPath(), false),
         size: const Size(100.0, 100.0),
       ),
-      AnimatedBezier(color, scale, blur: blur, delay: delay),
+      AnimatedBezier(color, scale, blur: blur),
     ]);
   }
 }
@@ -88,17 +88,16 @@ class PathDetail {
   PathDetail(this.path, {this.translate, this.rotation});
 
   Path path;
-  List<double> translate = <double>[];
-  double rotation;
+  List<double>? translate = <double>[];
+  double? rotation;
 }
 
 class AnimatedBezier extends StatefulWidget {
-  const AnimatedBezier(this.color, this.scale, {this.blur = 0.0, this.delay});
+  const AnimatedBezier(this.color, this.scale, {Key? key, this.blur = 0.0}) : super(key: key);
 
   final Color color;
   final double scale;
   final double blur;
-  final double delay;
 
   @override
   State createState() => AnimatedBezierState();
@@ -113,9 +112,8 @@ class Point {
 
 class AnimatedBezierState extends State<AnimatedBezier>
     with SingleTickerProviderStateMixin {
-  double scale;
-  AnimationController controller;
-  CurvedAnimation curve;
+  late AnimationController controller;
+  late CurvedAnimation curve;
   bool isPlaying = false;
   List<List<Point>> pointList = <List<Point>>[
     <Point>[],
@@ -146,7 +144,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     path.moveTo(100.0, 97.0);
 
-    for (Point p in pointList[0]) {
+    for (final Point p in pointList[0]) {
       path.lineTo(p.x, p.y);
     }
 
@@ -167,7 +165,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     bezier2Path.moveTo(0.0, 70.55);
 
-    for (Point p in pointList[1]) {
+    for (final Point p in pointList[1]) {
       bezier2Path.lineTo(p.x, p.y);
     }
 
@@ -188,7 +186,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     bezier3Path.moveTo(0.0, 69.48);
 
-    for (Point p in pointList[2]) {
+    for (final Point p in pointList[2]) {
       bezier3Path.lineTo(p.x, p.y);
     }
 
@@ -210,7 +208,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     bezier4Path.moveTo(0.0, 69.48);
 
-    for (Point p in pointList[3]) {
+    for (final Point p in pointList[3]) {
       bezier4Path.lineTo(p.x, p.y);
     }
 
@@ -221,7 +219,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
   }
 
   List<PathDetail> _playReversed() {
-    for (List<Point> list in pointList) {
+    for (final List<Point> list in pointList) {
       if (list.isNotEmpty) {
         list.removeLast();
       }
@@ -232,7 +230,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     path.moveTo(100.0, 97.0);
 
-    for (Point point in points) {
+    for (final Point point in points) {
       path.lineTo(point.x, point.y);
     }
 
@@ -240,14 +238,14 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     bezier2Path.moveTo(0.0, 70.55);
 
-    for (Point p in pointList[1]) {
+    for (final Point p in pointList[1]) {
       bezier2Path.lineTo(p.x, p.y);
     }
 
     final Path bezier3Path = Path();
     bezier3Path.moveTo(0.0, 69.48);
 
-    for (Point p in pointList[2]) {
+    for (final Point p in pointList[2]) {
       bezier3Path.lineTo(p.x, p.y);
     }
 
@@ -255,7 +253,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
     bezier4Path.moveTo(0.0, 69.48);
 
-    for (Point p in pointList[3]) {
+    for (final Point p in pointList[3]) {
       bezier4Path.lineTo(p.x, p.y);
     }
 
@@ -278,7 +276,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
 
   //From http://wiki.roblox.com/index.php?title=File:Beziereq4.png
   double _getCubicPoint(double t, double p0, double p1, double p2, double p3) {
-    return pow(1 - t, 3) * p0 +
+    return (pow(1 - t, 3) as double) * p0 +
         3 * pow(1 - t, 2) * t * p1 +
         3 * (1 - t) * pow(t, 2) * p2 +
         pow(t, 3) * p3;
@@ -287,7 +285,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
   void playAnimation() {
     isPlaying = true;
     isReversed = false;
-    for (List<Point> list in pointList) {
+    for (final List<Point> list in pointList) {
       list.clear();
     }
     controller.reset();
@@ -297,7 +295,7 @@ class AnimatedBezierState extends State<AnimatedBezier>
   void stopAnimation() {
     isPlaying = false;
     controller.stop();
-    for (List<Point> list in pointList) {
+    for (final List<Point> list in pointList) {
       list.clear();
     }
   }
@@ -312,6 +310,10 @@ class AnimatedBezierState extends State<AnimatedBezier>
     super.initState();
     controller = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1000));
+    // Animations are typically implemented using the AnimatedBuilder widget.
+    // This code uses a manual listener for historical reasons and will remain
+    // in order to preserve compatibility with the history of measurements for
+    // this benchmark.
     curve = CurvedAnimation(parent: controller, curve: Curves.linear)
       ..addListener(() {
         setState(() {});
@@ -361,11 +363,11 @@ class BezierPainter extends CustomPainter {
 
     for (int i = 0; i < path.length; i++) {
       if (path[i].translate != null) {
-        canvas.translate(path[i].translate[0], path[i].translate[1]);
+        canvas.translate(path[i].translate![0], path[i].translate![1]);
       }
 
       if (path[i].rotation != null) {
-        canvas.rotate(path[i].rotation);
+        canvas.rotate(path[i].rotation!);
       }
 
       if (blur > 0) {

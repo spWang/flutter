@@ -1,18 +1,13 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:meta/meta.dart';
-
-import 'base/config.dart';
 import 'base/context.dart';
-import 'base/platform.dart';
-import 'version.dart';
 
 /// The current [FeatureFlags] implementation.
 ///
 /// If not injected, a default implementation is provided.
-FeatureFlags get featureFlags => context.get<FeatureFlags>();
+FeatureFlags get featureFlags => context.get<FeatureFlags>()!;
 
 /// The interface used to determine if a particular [Feature] is enabled.
 ///
@@ -21,50 +16,44 @@ FeatureFlags get featureFlags => context.get<FeatureFlags>();
 /// flags should be provided with a default implementation here. Clients that
 /// use this class should extent instead of implement, so that new flags are
 /// picked up automatically.
-class FeatureFlags {
+abstract class FeatureFlags {
+  /// const constructor so that subclasses can be const.
   const FeatureFlags();
 
   /// Whether flutter desktop for linux is enabled.
-  bool get isLinuxEnabled => isEnabled(flutterLinuxDesktopFeature);
+  bool get isLinuxEnabled => false;
 
   /// Whether flutter desktop for macOS is enabled.
-  bool get isMacOSEnabled => isEnabled(flutterMacOSDesktopFeature);
+  bool get isMacOSEnabled => false;
 
   /// Whether flutter web is enabled.
-  bool get isWebEnabled => isEnabled(flutterWebFeature);
+  bool get isWebEnabled => false;
 
   /// Whether flutter desktop for Windows is enabled.
-  bool get isWindowsEnabled => isEnabled(flutterWindowsDesktopFeature);
+  bool get isWindowsEnabled => false;
 
-  /// Whether the Android embedding V2 is enabled.
-  bool get isAndroidEmbeddingV2Enabled => isEnabled(flutterAndroidEmbeddingV2Feature);
+  /// Whether android is enabled.
+  bool get isAndroidEnabled => true;
 
-  /// Whether the web incremental compiler is enabled.
-  bool get isWebIncrementalCompilerEnabled => isEnabled(flutterWebIncrementalCompiler);
+  /// Whether iOS is enabled.
+  bool get isIOSEnabled => true;
+
+  /// Whether fuchsia is enabled.
+  bool get isFuchsiaEnabled => true;
+
+  /// Whether custom devices are enabled.
+  bool get areCustomDevicesEnabled => false;
+
+  /// Whether fast single widget reloads are enabled.
+  bool get isSingleWidgetReloadEnabled => false;
+
+  /// Whether the windows UWP embedding is enabled.
+  bool get isWindowsUwpEnabled => false;
 
   /// Whether a particular feature is enabled for the current channel.
   ///
   /// Prefer using one of the specific getters above instead of this API.
-  bool isEnabled(Feature feature) {
-    final String currentChannel = FlutterVersion.instance.channel;
-    final FeatureChannelSetting featureSetting = feature.getSettingForChannel(currentChannel);
-    if (!featureSetting.available) {
-      return false;
-    }
-    bool isEnabled = featureSetting.enabledByDefault;
-    if (feature.configSetting != null) {
-      final bool configOverride = Config.instance.getValue(feature.configSetting);
-      if (configOverride != null) {
-        isEnabled = configOverride;
-      }
-    }
-    if (feature.environmentOverride != null) {
-      if (platform.environment[feature.environmentOverride]?.toLowerCase() == 'true') {
-        isEnabled = true;
-      }
-    }
-    return isEnabled;
-  }
+  bool isEnabled(Feature feature);
 }
 
 /// All current Flutter feature flags.
@@ -73,9 +62,12 @@ const List<Feature> allFeatures = <Feature>[
   flutterLinuxDesktopFeature,
   flutterMacOSDesktopFeature,
   flutterWindowsDesktopFeature,
-  flutterBuildPluginAsAarFeature,
-  flutterAndroidEmbeddingV2Feature,
-  flutterWebIncrementalCompiler,
+  windowsUwpEmbedding,
+  singleWidgetReload,
+  flutterAndroidFeature,
+  flutterIOSFeature,
+  flutterFuchsiaFeature,
+  flutterCustomDevicesFeature,
 ];
 
 /// The [Feature] for flutter web.
@@ -85,80 +77,147 @@ const Feature flutterWebFeature = Feature(
   environmentOverride: 'FLUTTER_WEB',
   master: FeatureChannelSetting(
     available: true,
-    enabledByDefault: false,
+    enabledByDefault: true,
   ),
-  dev: FeatureChannelSetting(
+  beta: FeatureChannelSetting(
     available: true,
-    enabledByDefault: false,
+    enabledByDefault: true,
   ),
-);
-
-/// The [Feature] for macOS desktop.
-const Feature flutterMacOSDesktopFeature = Feature(
-  name: 'Flutter for desktop on macOS',
-  configSetting: 'enable-macos-desktop',
-  environmentOverride: 'FLUTTER_MACOS',
-  master: FeatureChannelSetting(
-    available: true,
-    enabledByDefault: false,
-  ),
-);
-
-/// The [Feature] for Linux desktop.
-const Feature flutterLinuxDesktopFeature = Feature(
-  name: 'Flutter for desktop on Linux',
-  configSetting: 'enable-linux-desktop',
-  environmentOverride: 'FLUTTER_LINUX',
-  master: FeatureChannelSetting(
-    available: true,
-    enabledByDefault: false,
-  ),
-);
-
-/// The [Feature] for Windows desktop.
-const Feature flutterWindowsDesktopFeature = Feature(
-  name: 'Flutter for desktop on Windows',
-  configSetting: 'enable-windows-desktop',
-  environmentOverride: 'FLUTTER_WINDOWS',
-  master: FeatureChannelSetting(
-    available: true,
-    enabledByDefault: false,
-  ),
-);
-
-/// The [Feature] for building plugins as AARs in an app project.
-const Feature flutterBuildPluginAsAarFeature = Feature(
-  name: 'Build plugins independently as AARs in app projects',
-  configSetting: 'enable-build-plugin-as-aar',
-  master: FeatureChannelSetting(
-    available: true,
-    enabledByDefault: false,
-  ),
-);
-
-/// The [Feature] for generating projects using the new Android embedding.
-const Feature flutterAndroidEmbeddingV2Feature = Feature(
-  name: 'flutter create generates projects using the Android embedding V2',
-  environmentOverride: 'ENABLE_ANDROID_EMBEDDING_V2',
-  configSetting: 'enable-android-embedding-v2',
-  master: FeatureChannelSetting(
+  stable: FeatureChannelSetting(
     available: true,
     enabledByDefault: true,
   ),
 );
 
-/// The [Feature] for using the incremental compiler instead of build runner.
-const Feature flutterWebIncrementalCompiler = Feature(
-  name: 'Enable the incremental compiler for web builds',
-  configSetting: 'enable-web-incremental-compiler',
-  environmentOverride: 'WEB_INCREMENTAL_COMPILER',
+/// The [Feature] for macOS desktop.
+const Feature flutterMacOSDesktopFeature = Feature(
+  name: 'beta-quality support for desktop on macOS',
+  configSetting: 'enable-macos-desktop',
+  environmentOverride: 'FLUTTER_MACOS',
+  extraHelpText: 'Newer beta versions are available on the beta channel.',
   master: FeatureChannelSetting(
     available: true,
-    enabledByDefault: false,
   ),
-  dev: FeatureChannelSetting(
+  beta: FeatureChannelSetting(
     available: true,
-    enabledByDefault: false,
+  ),
+  stable: FeatureChannelSetting(
+    available: true,
+  ),
+);
+
+/// The [Feature] for Linux desktop.
+const Feature flutterLinuxDesktopFeature = Feature(
+  name: 'beta-quality support for desktop on Linux',
+  configSetting: 'enable-linux-desktop',
+  environmentOverride: 'FLUTTER_LINUX',
+  extraHelpText: 'Newer beta versions are available on the beta channel.',
+  master: FeatureChannelSetting(
+    available: true,
+  ),
+  beta: FeatureChannelSetting(
+    available: true,
+  ),
+  stable: FeatureChannelSetting(
+    available: true,
+  ),
+);
+
+/// The [Feature] for Windows desktop.
+const Feature flutterWindowsDesktopFeature = Feature(
+  name: 'support for desktop on Windows',
+  configSetting: 'enable-windows-desktop',
+  environmentOverride: 'FLUTTER_WINDOWS',
+  master: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  beta: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  stable: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+);
+
+/// The [Feature] for Android devices.
+const Feature flutterAndroidFeature = Feature(
+  name: 'Flutter for Android',
+  configSetting: 'enable-android',
+  master: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  beta: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  stable: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+);
+
+
+/// The [Feature] for iOS devices.
+const Feature flutterIOSFeature = Feature(
+  name: 'Flutter for iOS',
+  configSetting: 'enable-ios',
+  master: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  beta: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  stable: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+);
+
+/// The [Feature] for Fuchsia support.
+const Feature flutterFuchsiaFeature = Feature(
+  name: 'Flutter for Fuchsia',
+  configSetting: 'enable-fuchsia',
+  environmentOverride: 'FLUTTER_FUCHSIA',
+  master: FeatureChannelSetting(
+    available: true,
+  ),
+);
+
+const Feature flutterCustomDevicesFeature = Feature(
+  name: 'Early support for custom device types',
+  configSetting: 'enable-custom-devices',
+  environmentOverride: 'FLUTTER_CUSTOM_DEVICES',
+  master: FeatureChannelSetting(
+    available: true,
+  ),
+);
+
+/// The fast hot reload feature for https://github.com/flutter/flutter/issues/61407.
+const Feature singleWidgetReload = Feature(
+  name: 'Hot reload optimization for changes to class body of a single widget',
+  configSetting: 'single-widget-reload-optimization',
+  environmentOverride: 'FLUTTER_SINGLE_WIDGET_RELOAD',
+  master: FeatureChannelSetting(
+    available: true,
+    enabledByDefault: true,
+  ),
+  beta: FeatureChannelSetting(
+    available: true,
+  ),
+);
+
+/// The feature for enabling the Windows UWP embedding.
+const Feature windowsUwpEmbedding = Feature(
+  name: 'Flutter for Windows UWP',
+  configSetting: 'enable-windows-uwp-desktop',
+  master: FeatureChannelSetting(
+    available: true,
   ),
 );
 
@@ -173,13 +232,13 @@ const Feature flutterWebIncrementalCompiler = Feature(
 class Feature {
   /// Creates a [Feature].
   const Feature({
-    @required this.name,
+    required this.name,
     this.environmentOverride,
     this.configSetting,
+    this.extraHelpText,
     this.master = const FeatureChannelSetting(),
-    this.dev = const FeatureChannelSetting(),
     this.beta = const FeatureChannelSetting(),
-    this.stable = const FeatureChannelSetting(),
+    this.stable = const FeatureChannelSetting()
   });
 
   /// The user visible name for this feature.
@@ -187,9 +246,6 @@ class Feature {
 
   /// The settings for the master branch and other unknown channels.
   final FeatureChannelSetting master;
-
-  /// The settings for the dev branch.
-  final FeatureChannelSetting dev;
 
   /// The settings for the beta branch.
   final FeatureChannelSetting beta;
@@ -204,15 +260,20 @@ class Feature {
   /// a feature.
   ///
   /// If not provided, defaults to `null` meaning there is no override.
-  final String environmentOverride;
+  final String? environmentOverride;
 
   /// The name of a setting that can be used to enable this feature.
   ///
   /// If not provided, defaults to `null` meaning there is no config setting.
-  final String configSetting;
+  final String? configSetting;
+
+  /// Additional text to add to the end of the help message.
+  ///
+  /// If not provided, defaults to `null` meaning there is no additional text.
+  final String? extraHelpText;
 
   /// A help message for the `flutter config` command, or null if unsupported.
-  String generateHelpMessage() {
+  String? generateHelpMessage() {
     if (configSetting == null) {
       return null;
     }
@@ -220,7 +281,6 @@ class Feature {
         'This setting will take effect on ');
     final List<String> channels = <String>[
       if (master.available) 'master',
-      if (dev.available) 'dev',
       if (beta.available) 'beta',
       if (stable.available) 'stable',
     ];
@@ -233,6 +293,9 @@ class Feature {
         ..removeLast()).join(', ');
       buffer.write('the $prefix, and ${channels.last} channels.');
     }
+    if (extraHelpText != null) {
+      buffer.write(' $extraHelpText');
+    }
     return buffer.toString();
   }
 
@@ -243,8 +306,6 @@ class Feature {
         return stable;
       case 'beta':
         return beta;
-      case 'dev':
-        return dev;
       case 'master':
       default:
         return master;
@@ -261,7 +322,7 @@ class FeatureChannelSetting {
 
   /// Whether the feature is available on this channel.
   ///
-  /// If not provded, defaults to `false`. This implies that the feature
+  /// If not provided, defaults to `false`. This implies that the feature
   /// cannot be enabled even by the settings below.
   final bool available;
 

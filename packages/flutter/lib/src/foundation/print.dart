@@ -1,18 +1,18 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
+// This file implements debugPrint in terms of print, so avoiding
+// calling "print" is sort of a non-starter here...
+// ignore_for_file: avoid_print
 
 import 'dart:async';
 import 'dart:collection';
 
 /// Signature for [debugPrint] implementations.
-typedef DebugPrintCallback = void Function(String message, { int wrapWidth });
-
-/// Prints a message to the console, which you can access using the "flutter"
-/// tool's "logs" command ("flutter logs").
 ///
-/// If a wrapWidth is provided, each line of the message is word-wrapped to that
-/// width. (Lines may be separated by newline characters, as in '\n'.)
+/// If a [wrapWidth] is provided, each line of the [message] is word-wrapped to
+/// that width. (Lines may be separated by newline characters, as in '\n'.)
 ///
 /// By default, this function very crudely attempts to throttle the rate at
 /// which messages are sent to avoid data loss on Android. This means that
@@ -26,12 +26,20 @@ typedef DebugPrintCallback = void Function(String message, { int wrapWidth });
 ///
 /// The default value is [debugPrintThrottled]. For a version that acts
 /// identically but does not throttle, use [debugPrintSynchronously].
+typedef DebugPrintCallback = void Function(String? message, { int? wrapWidth });
+
+/// Prints a message to the console, which you can access using the "flutter"
+/// tool's "logs" command ("flutter logs").
+///
+/// See also:
+///
+///   * [DebugPrintCallback], for function parameters and usage details.
 DebugPrintCallback debugPrint = debugPrintThrottled;
 
 /// Alternative implementation of [debugPrint] that does not throttle.
 /// Used by tests.
-void debugPrintSynchronously(String message, { int wrapWidth }) {
-  if (wrapWidth != null) {
+void debugPrintSynchronously(String? message, { int? wrapWidth }) {
+  if (message != null && wrapWidth != null) {
     print(message.split('\n').expand<String>((String line) => debugWordWrap(line, wrapWidth)).join('\n'));
   } else {
     print(message);
@@ -40,7 +48,7 @@ void debugPrintSynchronously(String message, { int wrapWidth }) {
 
 /// Implementation of [debugPrint] that throttles messages. This avoids dropping
 /// messages on platforms that rate-limit their logging (for example, Android).
-void debugPrintThrottled(String message, { int wrapWidth }) {
+void debugPrintThrottled(String? message, { int? wrapWidth }) {
   final List<String> messageLines = message?.split('\n') ?? <String>['null'];
   if (wrapWidth != null) {
     _debugPrintBuffer.addAll(messageLines.expand<String>((String line) => debugWordWrap(line, wrapWidth)));
@@ -55,7 +63,7 @@ const int _kDebugPrintCapacity = 12 * 1024;
 const Duration _kDebugPrintPauseTime = Duration(seconds: 1);
 final Queue<String> _debugPrintBuffer = Queue<String>();
 final Stopwatch _debugPrintStopwatch = Stopwatch();
-Completer<void> _debugPrintCompleter;
+Completer<void>? _debugPrintCompleter;
 bool _debugPrintScheduled = false;
 void _debugPrintTask() {
   _debugPrintScheduled = false;
@@ -105,20 +113,20 @@ enum _WordWrapParseMode { inSpace, inWord, atBreak }
 /// and so forth. It is only intended for formatting error messages.
 ///
 /// The default [debugPrint] implementation uses this for its line wrapping.
-Iterable<String> debugWordWrap(String message, int width, { String wrapIndent = '' }) sync* {
+Iterable<String> debugWordWrap(String message, int width, { String wrapIndent = '' }) {
   if (message.length < width || message.trimLeft()[0] == '#') {
-    yield message;
-    return;
+    return <String>[message];
   }
-  final Match prefixMatch = _indentPattern.matchAsPrefix(message);
-  final String prefix = wrapIndent + ' ' * prefixMatch.group(0).length;
+  final List<String> wrapped = <String>[];
+  final Match prefixMatch = _indentPattern.matchAsPrefix(message)!;
+  final String prefix = wrapIndent + ' ' * prefixMatch.group(0)!.length;
   int start = 0;
   int startForLengthCalculations = 0;
   bool addPrefix = false;
   int index = prefix.length;
   _WordWrapParseMode mode = _WordWrapParseMode.inSpace;
-  int lastWordStart;
-  int lastWordEnd;
+  late int lastWordStart;
+  int? lastWordEnd;
   while (true) {
     switch (mode) {
       case _WordWrapParseMode.inSpace: // at start of break point (or start of line); can't break until next break
@@ -141,13 +149,13 @@ Iterable<String> debugWordWrap(String message, int width, { String wrapIndent = 
             lastWordEnd = index;
           }
           if (addPrefix) {
-            yield prefix + message.substring(start, lastWordEnd);
+            wrapped.add(prefix + message.substring(start, lastWordEnd));
           } else {
-            yield message.substring(start, lastWordEnd);
+            wrapped.add(message.substring(start, lastWordEnd));
             addPrefix = true;
           }
           if (lastWordEnd >= message.length)
-            return;
+            return wrapped;
           // just yielded a line
           if (lastWordEnd == index) {
             // we broke at current position

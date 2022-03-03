@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -36,9 +36,9 @@ void validateEnglishLocalizations(File file) {
     throw ValidationError(errorMessages.toString());
   }
 
-  final Map<String, dynamic> bundle = json.decode(file.readAsStringSync());
+  final Map<String, dynamic> bundle = json.decode(file.readAsStringSync()) as Map<String, dynamic>;
 
-  for (String resourceId in bundle.keys) {
+  for (final String resourceId in bundle.keys) {
     if (resourceId.startsWith('@'))
       continue;
 
@@ -55,30 +55,31 @@ void validateEnglishLocalizations(File file) {
     errorMessages.writeln('A value was not specified for @$resourceId');
   }
 
-  for (String atResourceId in bundle.keys) {
+  for (final String atResourceId in bundle.keys) {
     if (!atResourceId.startsWith('@'))
       continue;
 
     final dynamic atResourceValue = bundle[atResourceId];
-    final Map<String, dynamic> atResource =
+    final Map<String, dynamic>? atResource =
         atResourceValue is Map<String, dynamic> ? atResourceValue : null;
     if (atResource == null) {
       errorMessages.writeln('A map value was not specified for $atResourceId');
       continue;
     }
 
-    final String description = atResource['description'];
-    if (description == null)
+    final bool optional = atResource.containsKey('optional');
+    final String? description = atResource['description'] as String?;
+    if (description == null && !optional)
       errorMessages.writeln('No description specified for $atResourceId');
 
-    final String plural = atResource['plural'];
+    final String? plural = atResource['plural'] as String?;
     final String resourceId = atResourceId.substring(1);
     if (plural != null) {
       final String resourceIdOther = '${resourceId}Other';
       if (!bundle.containsKey(resourceIdOther))
         errorMessages.writeln('Default plural resource $resourceIdOther undefined');
     } else {
-      if (!bundle.containsKey(resourceId))
+      if (!optional && !bundle.containsKey(resourceId))
         errorMessages.writeln('No matching $resourceId defined for $atResourceId');
     }
   }
@@ -100,12 +101,12 @@ void validateLocalizations(
   Map<LocaleInfo, Map<String, String>> localeToResources,
   Map<LocaleInfo, Map<String, dynamic>> localeToAttributes,
 ) {
-  final Map<String, String> canonicalLocalizations = localeToResources[LocaleInfo.fromString('en')];
+  final Map<String, String> canonicalLocalizations = localeToResources[LocaleInfo.fromString('en')]!;
   final Set<String> canonicalKeys = Set<String>.from(canonicalLocalizations.keys);
   final StringBuffer errorMessages = StringBuffer();
   bool explainMissingKeys = false;
   for (final LocaleInfo locale in localeToResources.keys) {
-    final Map<String, String> resources = localeToResources[locale];
+    final Map<String, String> resources = localeToResources[locale]!;
 
     // Whether `key` corresponds to one of the plural variations of a key with
     // the same prefix and suffix "Other".
@@ -113,10 +114,10 @@ void validateLocalizations(
     // Many languages require only a subset of these variations, so we do not
     // require them so long as the "Other" variation exists.
     bool isPluralVariation(String key) {
-      final Match pluralMatch = kPluralRegexp.firstMatch(key);
+      final Match? pluralMatch = kPluralRegexp.firstMatch(key);
       if (pluralMatch == null)
         return false;
-      final String prefix = pluralMatch[1];
+      final String? prefix = pluralMatch[1];
       return resources.containsKey('${prefix}Other');
     }
 
@@ -132,10 +133,10 @@ void validateLocalizations(
     // For language-level locales only, check that they have a complete list of
     // keys, or opted out of using certain ones.
     if (locale.length == 1) {
-      final Map<String, dynamic> attributes = localeToAttributes[locale];
-      final List<String> missingKeys = <String>[];
+      final Map<String, dynamic>? attributes = localeToAttributes[locale];
+      final List<String?> missingKeys = <String?>[];
        for (final String missingKey in canonicalKeys.difference(keys)) {
-        final dynamic attribute = attributes[missingKey];
+        final dynamic attribute = attributes?[missingKey];
         final bool intentionallyOmitted = attribute is Map && attribute.containsKey('notUsed');
         if (!intentionallyOmitted && !isPluralVariation(missingKey))
           missingKeys.add(missingKey);

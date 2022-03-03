@@ -1,8 +1,10 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 import 'dart:ui' as ui show Image;
+
+import 'package:flutter/animation.dart';
 
 import 'box.dart';
 import 'object.dart';
@@ -25,30 +27,35 @@ class RenderImage extends RenderBox {
   /// must not be null. The [textDirection] argument must not be null if
   /// [alignment] will need resolving or if [matchTextDirection] is true.
   RenderImage({
-    ui.Image image,
-    double width,
-    double height,
+    ui.Image? image,
+    this.debugImageLabel,
+    double? width,
+    double? height,
     double scale = 1.0,
-    Color color,
-    BlendMode colorBlendMode,
-    BoxFit fit,
+    Color? color,
+    Animation<double>? opacity,
+    BlendMode? colorBlendMode,
+    BoxFit? fit,
     AlignmentGeometry alignment = Alignment.center,
     ImageRepeat repeat = ImageRepeat.noRepeat,
-    Rect centerSlice,
+    Rect? centerSlice,
     bool matchTextDirection = false,
-    TextDirection textDirection,
+    TextDirection? textDirection,
     bool invertColors = false,
+    bool isAntiAlias = false,
     FilterQuality filterQuality = FilterQuality.low,
   }) : assert(scale != null),
        assert(repeat != null),
        assert(alignment != null),
        assert(filterQuality != null),
        assert(matchTextDirection != null),
+       assert(isAntiAlias != null),
        _image = image,
        _width = width,
        _height = height,
        _scale = scale,
        _color = color,
+       _opacity = opacity,
        _colorBlendMode = colorBlendMode,
        _fit = fit,
        _alignment = alignment,
@@ -57,12 +64,13 @@ class RenderImage extends RenderBox {
        _matchTextDirection = matchTextDirection,
        _invertColors = invertColors,
        _textDirection = textDirection,
+       _isAntiAlias = isAntiAlias,
        _filterQuality = filterQuality {
     _updateColorFilter();
   }
 
-  Alignment _resolvedAlignment;
-  bool _flipHorizontally;
+  Alignment? _resolvedAlignment;
+  bool? _flipHorizontally;
 
   void _resolve() {
     if (_resolvedAlignment != null)
@@ -78,24 +86,35 @@ class RenderImage extends RenderBox {
   }
 
   /// The image to display.
-  ui.Image get image => _image;
-  ui.Image _image;
-  set image(ui.Image value) {
-    if (value == _image)
+  ui.Image? get image => _image;
+  ui.Image? _image;
+  set image(ui.Image? value) {
+    if (value == _image) {
       return;
+    }
+    // If we get a clone of our image, it's the same underlying native data -
+    // dispose of the new clone and return early.
+    if (value != null && _image != null && value.isCloneOf(_image!)) {
+      value.dispose();
+      return;
+    }
+    _image?.dispose();
     _image = value;
     markNeedsPaint();
     if (_width == null || _height == null)
       markNeedsLayout();
   }
 
+  /// A string used to identify the source of the image.
+  String? debugImageLabel;
+
   /// If non-null, requires the image to have this width.
   ///
   /// If null, the image will pick a size that best preserves its intrinsic
   /// aspect ratio.
-  double get width => _width;
-  double _width;
-  set width(double value) {
+  double? get width => _width;
+  double? _width;
+  set width(double? value) {
     if (value == _width)
       return;
     _width = value;
@@ -106,9 +125,9 @@ class RenderImage extends RenderBox {
   ///
   /// If null, the image will pick a size that best preserves its intrinsic
   /// aspect ratio.
-  double get height => _height;
-  double _height;
-  set height(double value) {
+  double? get height => _height;
+  double? _height;
+  set height(double? value) {
     if (value == _height)
       return;
     _height = value;
@@ -128,19 +147,19 @@ class RenderImage extends RenderBox {
     markNeedsLayout();
   }
 
-  ColorFilter _colorFilter;
+  ColorFilter? _colorFilter;
 
   void _updateColorFilter() {
     if (_color == null)
       _colorFilter = null;
     else
-      _colorFilter = ColorFilter.mode(_color, _colorBlendMode ?? BlendMode.srcIn);
+      _colorFilter = ColorFilter.mode(_color!, _colorBlendMode ?? BlendMode.srcIn);
   }
 
   /// If non-null, this color is blended with each image pixel using [colorBlendMode].
-  Color get color => _color;
-  Color _color;
-  set color(Color value) {
+  Color? get color => _color;
+  Color? _color;
+  set color(Color? value) {
     if (value == _color)
       return;
     _color = value;
@@ -148,7 +167,23 @@ class RenderImage extends RenderBox {
     markNeedsPaint();
   }
 
-  /// Used to set the filterQuality of the image
+  /// If non-null, the value from the [Animation] is multiplied with the opacity
+  /// of each image pixel before painting onto the canvas.
+  Animation<double>? get opacity => _opacity;
+  Animation<double>? _opacity;
+  set opacity(Animation<double>? value) {
+    if (value == _opacity)
+      return;
+
+    if (attached)
+      _opacity?.removeListener(markNeedsPaint);
+    _opacity = value;
+    if (attached)
+      value?.addListener(markNeedsPaint);
+  }
+
+  /// Used to set the filterQuality of the image.
+  ///
   /// Use the [FilterQuality.low] quality setting to scale the image, which corresponds to
   /// bilinear interpolation, rather than the default [FilterQuality.none] which corresponds
   /// to nearest-neighbor.
@@ -171,9 +206,9 @@ class RenderImage extends RenderBox {
   /// See also:
   ///
   ///  * [BlendMode], which includes an illustration of the effect of each blend mode.
-  BlendMode get colorBlendMode => _colorBlendMode;
-  BlendMode _colorBlendMode;
-  set colorBlendMode(BlendMode value) {
+  BlendMode? get colorBlendMode => _colorBlendMode;
+  BlendMode? _colorBlendMode;
+  set colorBlendMode(BlendMode? value) {
     if (value == _colorBlendMode)
       return;
     _colorBlendMode = value;
@@ -185,9 +220,9 @@ class RenderImage extends RenderBox {
   ///
   /// The default varies based on the other fields. See the discussion at
   /// [paintImage].
-  BoxFit get fit => _fit;
-  BoxFit _fit;
-  set fit(BoxFit value) {
+  BoxFit? get fit => _fit;
+  BoxFit? _fit;
+  set fit(BoxFit? value) {
     if (value == _fit)
       return;
     _fit = value;
@@ -226,9 +261,9 @@ class RenderImage extends RenderBox {
   /// region of the image above and below the center slice will be stretched
   /// only horizontally and the region of the image to the left and right of
   /// the center slice will be stretched only vertically.
-  Rect get centerSlice => _centerSlice;
-  Rect _centerSlice;
-  set centerSlice(Rect value) {
+  Rect? get centerSlice => _centerSlice;
+  Rect? _centerSlice;
+  set centerSlice(Rect? value) {
     if (value == _centerSlice)
       return;
     _centerSlice = value;
@@ -237,7 +272,7 @@ class RenderImage extends RenderBox {
 
   /// Whether to invert the colors of the image.
   ///
-  /// inverting the colors of an image applies a new color filter to the paint.
+  /// Inverting the colors of an image applies a new color filter to the paint.
   /// If there is another specified color filter, the invert will be applied
   /// after it. This is primarily used for implementing smart invert on iOS.
   bool get invertColors => _invertColors;
@@ -278,13 +313,27 @@ class RenderImage extends RenderBox {
   /// This may be changed to null, but only after the [alignment] and
   /// [matchTextDirection] properties have been changed to values that do not
   /// depend on the direction.
-  TextDirection get textDirection => _textDirection;
-  TextDirection _textDirection;
-  set textDirection(TextDirection value) {
+  TextDirection? get textDirection => _textDirection;
+  TextDirection? _textDirection;
+  set textDirection(TextDirection? value) {
     if (_textDirection == value)
       return;
     _textDirection = value;
     _markNeedResolution();
+  }
+
+  /// Whether to paint the image with anti-aliasing.
+  ///
+  /// Anti-aliasing alleviates the sawtooth artifact when the image is rotated.
+  bool get isAntiAlias => _isAntiAlias;
+  bool _isAntiAlias;
+  set isAntiAlias(bool value) {
+    if (_isAntiAlias == value) {
+      return;
+    }
+    assert(value != null);
+    _isAntiAlias = value;
+    markNeedsPaint();
   }
 
   /// Find a size for the render image within the given constraints.
@@ -306,8 +355,8 @@ class RenderImage extends RenderBox {
       return constraints.smallest;
 
     return constraints.constrainSizeAndAttemptToPreserveAspectRatio(Size(
-      _image.width.toDouble() / _scale,
-      _image.height.toDouble() / _scale,
+      _image!.width.toDouble() / _scale,
+      _image!.height.toDouble() / _scale,
     ));
   }
 
@@ -343,8 +392,25 @@ class RenderImage extends RenderBox {
   bool hitTestSelf(Offset position) => true;
 
   @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    return _sizeForConstraints(constraints);
+  }
+
+  @override
   void performLayout() {
     size = _sizeForConstraints(constraints);
+  }
+
+  @override
+  void attach(covariant PipelineOwner owner) {
+    super.attach(owner);
+    _opacity?.addListener(markNeedsPaint);
+  }
+
+  @override
+  void detach() {
+    _opacity?.removeListener(markNeedsPaint);
+    super.detach();
   }
 
   @override
@@ -357,17 +423,27 @@ class RenderImage extends RenderBox {
     paintImage(
       canvas: context.canvas,
       rect: offset & size,
-      image: _image,
+      image: _image!,
+      debugImageLabel: debugImageLabel,
       scale: _scale,
+      opacity: _opacity?.value ?? 1.0,
       colorFilter: _colorFilter,
       fit: _fit,
-      alignment: _resolvedAlignment,
+      alignment: _resolvedAlignment!,
       centerSlice: _centerSlice,
       repeat: _repeat,
-      flipHorizontally: _flipHorizontally,
+      flipHorizontally: _flipHorizontally!,
       invertColors: invertColors,
       filterQuality: _filterQuality,
+      isAntiAlias: _isAntiAlias,
     );
+  }
+
+  @override
+  void dispose() {
+    _image?.dispose();
+    _image = null;
+    super.dispose();
   }
 
   @override
@@ -378,6 +454,7 @@ class RenderImage extends RenderBox {
     properties.add(DoubleProperty('height', height, defaultValue: null));
     properties.add(DoubleProperty('scale', scale, defaultValue: 1.0));
     properties.add(ColorProperty('color', color, defaultValue: null));
+    properties.add(DiagnosticsProperty<Animation<double>?>('opacity', opacity, defaultValue: null));
     properties.add(EnumProperty<BlendMode>('colorBlendMode', colorBlendMode, defaultValue: null));
     properties.add(EnumProperty<BoxFit>('fit', fit, defaultValue: null));
     properties.add(DiagnosticsProperty<AlignmentGeometry>('alignment', alignment, defaultValue: null));
